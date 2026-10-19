@@ -26,8 +26,8 @@ class Game:
         pacman_asset = Asset(self.game_assets_path + "pacman.svg")
         pacman_asset.resize_asset(self.width_wall / 1.5, self.height_wall / 1.5)
 
-        x = self.border_size_width + (len(self.maze.maze[0]) // 2) * self.width_wall + self.width_wall / 2 - pacman_asset.asset.get_width() / 2
-        y = self.border_size_height + (len(self.maze.maze) // 2) * self.height_wall + self.height_wall / 2 - pacman_asset.asset.get_height() / 2
+        x = self.border_size_width + (len(self.maze.maze[0]) // 2) * self.width_wall + self.width_wall // 2 - pacman_asset.asset.get_width() // 2
+        y = self.border_size_height + (len(self.maze.maze) // 2) * self.height_wall + self.height_wall // 2 - pacman_asset.asset.get_height() // 2
 
         self.pacman = Pacman(x, y, pacman_asset)
 

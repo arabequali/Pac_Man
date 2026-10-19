@@ -88,14 +88,14 @@ class Pacman(Moving):
         super().__init__(x, y, asset)
         self.direction : int = 0
 
-    def pacmove(self, key_pressed: int, width_wall: int, height_wall: int, maze, surface) -> None:
-        if key_pressed == 0 and maze.can_go(self.x, self.y, 0, surface):
+    def pacmove(self, key_pressed: int, width_wall: int, height_wall: int, maze) -> None:
+        if key_pressed == 0 and maze.can_go(self.x, self.y, 0):
             self.y -= height_wall
-        if key_pressed == 1 and maze.can_go(self.x, self.y, 1, surface):
+        if key_pressed == 1 and maze.can_go(self.x, self.y, 1):
             self.x += width_wall
-        if key_pressed == 2 and maze.can_go(self.x, self.y, 2, surface):
+        if key_pressed == 2 and maze.can_go(self.x, self.y, 2):
             self.y += height_wall
-        if key_pressed == 3 and maze.can_go(self.x, self.y, 3, surface):
+        if key_pressed == 3 and maze.can_go(self.x, self.y, 3):
             self.x -= width_wall
 
     #direction: up = 0, right = 1, down = 2, left = 3

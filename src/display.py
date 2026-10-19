@@ -22,7 +22,7 @@ class Display:
         pygame.init()
         screen = pygame.display.set_mode((self.window_size_w, self.window_size_h))
         self.menu = Menu(screen)
-        self.maze = Maze(mazegenerator.MazeGenerator((20, 20)).maze, screen)
+        self.maze = Maze(mazegenerator.MazeGenerator((25, 25)).maze, screen)
         self.game = Game(self.maze, screen)
 
         clock = pygame.time.Clock()
@@ -71,7 +71,7 @@ class Display:
                     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
                 self.maze.display_maze()
                 if ticking % 10 == 0:
-                    self.game.pacman.pacmove(pacmove, self.game.width_wall, self.game.height_wall, self.maze, screen)
+                    self.game.pacman.pacmove(pacmove, self.game.width_wall, self.game.height_wall, self.maze)
                     pacmove = -1
                     key_pressed = -1
                 self.game.display_game()

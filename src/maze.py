@@ -26,16 +26,26 @@ class Maze:
         number_index = int((x - self.border_size_width) / self.width_wall)
         line_index = int((y - self.border_size_height) / self.height_wall)
 
+        verif_value = self.maze[line_index][number_index]
         if direction == 0:
             if self.maze[line_index][number_index] >= 8:
+                verif_value -= 8
+            if verif_value >= 4:
+                verif_value -= 4
+            if verif_value >= 2:
+                verif_value -= 2
+            if verif_value >= 1:
                 return (0)
+            print(1)
             return (1)
 
         verif_value = self.maze[line_index][number_index]
         if direction == 1:
-            if self.maze[line_index][number_index] >= 8:
+            if verif_value >= 8:
                 verif_value -= 8
-            if self.maze[line_index][number_index] >= 4:
+            if verif_value >= 4:
+                verif_value -= 4
+            if verif_value >= 2:
                 return (0)
             return (1)
 
@@ -44,20 +54,14 @@ class Maze:
             if verif_value >= 8:
                 verif_value -= 8
             if verif_value >= 4:
-                verif_value -= 4
-            if verif_value >= 2:
                 return (0)
             return (1)
 
+        verif_value = self.maze[line_index][number_index]
         if direction == 3:
             if verif_value >= 8:
-                verif_value -= 8
-            if verif_value >= 4:
-                verif_value -= 4
-            if verif_value >= 2:
-                verif_value -= 2
-            if verif_value >= 1:
                 return (0)
+            print(1)
             return (1)
 
     def display_maze(self) -> None:
