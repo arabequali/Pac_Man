@@ -1,4 +1,6 @@
 import pygame
+import mazegenerator
+
 from src.maze import Maze
 from src.menu import Menu
 from src.game import Game
@@ -6,12 +8,11 @@ from src.game import Game
 class Display:
     def __init__(
         self,
-        maze: Maze,
         window_width: int,
         window_height: int,
     ) -> None:
-        self.maze = maze
-        self.menu = Menu(self.maze)
+        self.menu: Menu
+        self.maze: Maze
         self.game: Game
 
         self.window_size_w = window_width
@@ -20,7 +21,10 @@ class Display:
     def pipeline(self) -> None:
         pygame.init()
         screen = pygame.display.set_mode((self.window_size_w, self.window_size_h))
+        self.menu = Menu(screen)
+        self.maze = Maze(mazegenerator.MazeGenerator((20, 20)).maze, screen)
         self.game = Game(self.maze, screen)
+
         clock = pygame.time.Clock()
 
         running = True
@@ -30,6 +34,7 @@ class Display:
 
         cursor_pos = 0
         ticking = 0
+        pacmove = -1
 
         while running:
             for event in pygame.event.get():
@@ -56,15 +61,19 @@ class Display:
                     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
                 self.menu.display_menu(screen, cursor_pos, ticking)
 
-            if in_game:
+            elif in_game:
                 key_pressed = self.game.game_action()
-                if key_pressed == 11 and pygame.Surface.get_flags(screen) == 2164260866:
+                if key_pressed >= 0 and key_pressed <= 3:
+                    pacmove = key_pressed
+                elif key_pressed == 11 and pygame.Surface.get_flags(screen) == 2164260866:
                     screen = pygame.display.set_mode((self.window_size_w, self.window_size_h))
                 elif key_pressed == 11 and pygame.Surface.get_flags(screen) == 16777218:
                     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-                self.maze.display_maze(screen)
+                self.maze.display_maze()
                 if ticking % 10 == 0:
-                    self.game.pacman.pacmove(self.game.game_action(), self.game.width_wall, self.game.height_wall)
+                    self.game.pacman.pacmove(pacmove, self.game.width_wall, self.game.height_wall, self.maze, screen)
+                    pacmove = -1
+                    key_pressed = -1
                 self.game.display_game()
 
             pygame.display.flip()

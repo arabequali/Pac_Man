@@ -66,6 +66,7 @@ class Game:
             return (3)
         if keys[pygame.K_F11]:
             return (11)
+        return (-1)
 
     def display_game(self) -> None:
 
