@@ -1,7 +1,9 @@
+import time
+
 from src.config.loader import ConfigLoader
 from src.ui.graphics import Graphics
 from src.ui.renderer import Renderer
-from src.ui.screens import GameScreen, MainMenuScreen, ExitScreen
+from src.ui.screens import Screen, GameScreen, MainMenuScreen, ExitScreen, HighscoreScreen, OptionsScreen
 
 
 class Application:
@@ -16,8 +18,16 @@ class Application:
         self._config = config
         self._graphics = graphics
         self._renderer = renderer
-        self._running = False
-        self.current_screen = MainMenuScreen()
+        self._running: bool = False
+        self.screens = {
+            "main_menu": MainMenuScreen(),
+            "highscores": HighscoreScreen(),
+            "options": OptionsScreen(),
+            "game": GameScreen(),
+            "exit": ExitScreen()
+        }
+        self.current_screen_name: str = "main_menu"
+        self._last_time = time.time()
 
     @property
     def config(self) -> ConfigLoader:
@@ -35,6 +45,12 @@ class Application:
     def running(self) -> bool:
         return self._running
 
+    def get_time_elapsed(self) -> float:
+        current_time = time.time()
+        elapsed_time = current_time - self._last_time
+        self._last_time = current_time
+        return elapsed_time
+
     def set_running(self, running: bool) -> None:
         self._running = running
 
@@ -46,26 +62,24 @@ class Application:
         while self.running:
             # Handle events
             actions = self.graphics.get_actions()
-            for action in actions:
-                if action == "QUIT":
+            if len(actions) > 0:
+                if actions[0] == "QUIT":
                     self.set_running(False)
                 else:
-                    new_screen = self.current_screen.handle_actions(actions)
+                    new_screen = self.screens[self.current_screen_name].handle_actions(actions[0])
                     if new_screen is not None:
-                        self.current_screen.on_exit()
-                        self.current_screen = new_screen
-                        self.current_screen.on_enter()
-                        break  # Exit the loop to avoid processing further actions for the old screen
+                        self.screens[self.current_screen_name].on_exit()
+                        self.current_screen_name = new_screen
+                        self.screens[self.current_screen_name].on_enter()
 
-            if isinstance(self.current_screen, ExitScreen):
+            if self.current_screen_name == "exit":
                 self.set_running(False)
 
             # Update the current screen
-            if isinstance(self.current_screen, GameScreen):
-                self.current_screen.update(self._renderer.get_time_elapsed())
+            self.screens[self.current_screen_name].update(self.get_time_elapsed())
 
             # Draw the current screen
             self.graphics.clear_window((0, 0, 0))  # Clear the window with black color
-            self.current_screen.draw(self._renderer)
+            self.screens[self.current_screen_name].draw(self._renderer)
             self.graphics.update_window()
         self.graphics.close_window()

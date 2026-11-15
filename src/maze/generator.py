@@ -1,3 +1,5 @@
+from typing import Any
+
 import mazegenerator
 from src.maze.maze import Cell
 
@@ -19,11 +21,10 @@ class MazeGenerator:
             self,
             size: list[int],
             seed: int
-        ):
+        ) -> Any:
 
         return mazegenerator.MazeGenerator(tuple(size), seed=seed, perfect=False).maze
 
-    from src.maze.generator import Cell
     def _convert_maze(self, maze: list[list[int]]) -> list[list[Cell]]:
 
         converted_maze = []
