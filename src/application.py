@@ -1,9 +1,14 @@
 import time
 
-from src.config.loader import ConfigLoader
+from typing import Any
+
+from src.config.models import Config
+
 from src.ui.graphics import Graphics
 from src.ui.renderer import Renderer
-from src.ui.screens import Screen, GameScreen, MainMenuScreen, ExitScreen, HighscoreScreen, OptionsScreen
+from src.ui.screens import GameScreen, MainMenuScreen, ExitScreen, HighscoreScreen, OptionsScreen
+
+from src.engine.engine import GameEngine
 
 
 class Application:
@@ -11,26 +16,27 @@ class Application:
 
     def __init__(
             self,
-            config: ConfigLoader,
+            config: Config,
             graphics: Graphics,
             renderer: Renderer,
         ) -> None:
         self._config = config
         self._graphics = graphics
         self._renderer = renderer
+        self._game_engine = None
         self._running: bool = False
         self.screens = {
             "main_menu": MainMenuScreen(),
             "highscores": HighscoreScreen(),
-            "options": OptionsScreen(),
-            "game": GameScreen(),
+            "options": OptionsScreen(self.config),
+            "game": None,  # GameScreen will be initialized when the game starts
             "exit": ExitScreen()
         }
         self.current_screen_name: str = "main_menu"
         self._last_time = time.time()
 
     @property
-    def config(self) -> ConfigLoader:
+    def config(self) -> Config:
         return self._config
 
     @property
@@ -54,32 +60,46 @@ class Application:
     def set_running(self, running: bool) -> None:
         self._running = running
 
+    def handle_events(
+            self,
+            actions: Any
+    ) -> None:
+        if actions[0] == "QUIT":
+            self.set_running(False)
+        else:
+            new_screen = self.screens[self.current_screen_name].handle_actions(actions[0])
+            if new_screen == "game" and self._game_engine is None and self.screens["game"] is None:
+                self._game_engine = GameEngine(self.config)
+
+                maze_width, maze_height = self._game_engine.current_level.maze.width, self._game_engine.current_level.maze.height
+                self.screens["game"] = GameScreen(self.config, self._game_engine, self.renderer.get_maze_layout((maze_width, maze_height), self._game_engine))
+
+            if new_screen is not None:
+                self.screens[self.current_screen_name].on_exit()
+                self.current_screen_name = new_screen
+                self.screens[self.current_screen_name].on_enter()
+
+    def draw_current_screen(self) -> None:
+        current_screen = self.screens[self.current_screen_name]
+        current_screen.update(self.get_time_elapsed())
+        self.graphics.clear_window((0, 0, 0))  # Clear the window with black color.
+        current_screen.draw(self.graphics)
+        self.graphics.update_window()  # Display the new frame drawn before.
+        
+        if self.current_screen_name == "exit":
+            self.set_running(False)
+
     def run(self) -> None:
         """Run the application."""
-        self.graphics.open_window()
 
+        self.graphics.open_window()
         self.set_running(True)
         while self.running:
             # Handle events
             actions = self.graphics.get_actions()
             if len(actions) > 0:
-                if actions[0] == "QUIT":
-                    self.set_running(False)
-                else:
-                    new_screen = self.screens[self.current_screen_name].handle_actions(actions[0])
-                    if new_screen is not None:
-                        self.screens[self.current_screen_name].on_exit()
-                        self.current_screen_name = new_screen
-                        self.screens[self.current_screen_name].on_enter()
+                self.handle_events(actions)
 
-            if self.current_screen_name == "exit":
-                self.set_running(False)
+            self.draw_current_screen()
 
-            # Update the current screen
-            self.screens[self.current_screen_name].update(self.get_time_elapsed())
-
-            # Draw the current screen
-            self.graphics.clear_window((0, 0, 0))  # Clear the window with black color
-            self.screens[self.current_screen_name].draw(self._renderer)
-            self.graphics.update_window()
         self.graphics.close_window()

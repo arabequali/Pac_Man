@@ -1,7 +1,14 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from src.ui.renderer import Renderer
+from src.config.models import Config
+
+from src.maze.maze import Cell
+
+from src.ui.graphics import Graphics
+from src.ui.renderer import MazeLayout
+
+from src.engine.engine import GameEngine
 
 
 class Screen(ABC):
@@ -21,8 +28,8 @@ class Screen(ABC):
         pass
 
     @abstractmethod
-    def draw(self, renderer: Renderer) -> None:
-        """Draw the screen using the renderer."""
+    def draw(self, graphics: Graphics) -> None:
+        """Draw the screen using the Graphics class."""
         pass
 
     def on_enter(self) -> None:
@@ -43,7 +50,7 @@ class ExitScreen(Screen):
     def update(self, time_elapsed: float) -> None:
         pass
 
-    def draw(self, renderer: Renderer) -> None:
+    def draw(self, graphics: Graphics) -> None:
         pass
 
     def on_enter(self) -> None:
@@ -81,19 +88,17 @@ class MainMenuScreen(Screen):
     def update(self, time_elapsed: float) -> None:
         pass
 
-    def draw(self, renderer: Renderer) -> None:
+    def draw(self, graphics: Graphics) -> None:
 
-        renderer.graphics.clear_window((0, 0, 0))  # Clear the window with black color
-
-        window_w, window_h = renderer.graphics.get_window_size()
+        window_w, window_h = graphics.get_window_size()
 
         for i, option in enumerate(self._options):
 
             color = (255, 255, 255) if i == self._selected_option else (100, 100, 100)
-            x_placement = window_w // 2 - renderer.graphics.get_string_size(option, 30)[0] // 2
-            y_placement = window_h // 2 + i * (renderer.graphics.get_string_size(option, 30)[1] + 15)
+            x_placement = window_w // 2 - graphics.get_string_size(option, 30)[0] // 2
+            y_placement = window_h // 2 + i * (graphics.get_string_size(option, 30)[1] + 15)
 
-            renderer.graphics.draw_string(x_placement, y_placement, option, font_size=30, color=color)
+            graphics.draw_string(x_placement, y_placement, option, font_size=30, color=color)
 
 
 class HighscoreScreen(Screen):
@@ -111,19 +116,26 @@ class HighscoreScreen(Screen):
     def update(self, time_elapsed: float) -> None:
         pass
 
-    def draw(self, renderer: Renderer) -> None:
-        renderer.graphics.clear_window((0, 0, 0))  # Clear the window with black color
+    def draw(self, graphics: Graphics) -> None:
         for i, score in enumerate(self._highscores):
-            renderer.graphics.draw_string(50, 50 + i * 30, score, font_size=24, color=(255, 255, 255))
+            graphics.draw_string(50, 50 + i * 30, score, font_size=24, color=(255, 255, 255))
 
 
 class OptionsScreen(Screen):
     """The options screen of the application."""
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            config: Config
+        ) -> None:
         super().__init__()
         self._selected_option = 0
-        self._options = ["Option 1", "Option 2", "Back"]
+        self._options = [key[0] for key in config]
+        self._options.append("Back")
+        self._config = config
+
+    def set_config(self, config: Config) -> None:
+        self._config = config
 
     def handle_actions(self, action: Any) -> str | None:
 
@@ -142,19 +154,32 @@ class OptionsScreen(Screen):
     def update(self, time_elapsed: float) -> None:
         pass
 
-    def draw(self, renderer: Renderer) -> None:
-        renderer.graphics.clear_window((0, 0, 0))  # Clear the window with black color
+    def draw(self, graphics: Graphics) -> None:
         for i, option in enumerate(self._options):
             color = (255, 255, 255) if i == self._selected_option else (100, 100, 100)
-            renderer.graphics.draw_string(50, 50 + i * 30, option, font_size=24, color=color)
+            text = f"{option.capitalize().replace("_", " ")}: {self.get_config_value(option)}" if option != "Back" else option
+            graphics.draw_string(50, 50 + i * 30, text, font_size=24, color=color)
+
+    def get_config_value(self, option: str) -> int | str | bool | None:
+        return self._config.model_dump()[option]
 
 
 class GameScreen(Screen):
     """The game screen of the application."""
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            config: Config,
+            game_engine: GameEngine,
+            maze_layout: MazeLayout
+        ) -> None:
         super().__init__()
-        # Initialize game state here
+        self._config = config
+        self._game_engine = game_engine
+        self.maze_layout = maze_layout
+
+    def set_config(self, config: Config) -> None:
+        self._config = config
 
     def handle_actions(self, action: Any) -> str | None:
 
@@ -167,6 +192,19 @@ class GameScreen(Screen):
         # Update game state here
         return None
 
-    def draw(self, renderer: Renderer) -> None:
-        renderer.graphics.clear_window((0, 0, 0))  # Clear the window with black color
+    def draw(
+            self,
+            graphics: Graphics
+        ) -> None:
+        """Draw the whole game."""
+
+        maze_image = self.maze_layout.maze_image
+        width_offset = self.maze_layout.width_offset // 2
+        height_offset = self.maze_layout.height_offset // 2
+        graphics.put_image(maze_image, width_offset, height_offset)
         # Draw game elements here
+
+    def on_enter(
+            self,
+        ) -> None:
+        pass  # Initialize game state when entering the game screen

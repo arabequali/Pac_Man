@@ -3,7 +3,7 @@ from pathlib import Path
 
 from src.config.loader import ConfigLoader
 from src.config.models import ConfigError
-from src.maze.generator import MazeGenerator
+from src.maze.generator import MazeGenerator, MazeGenerationError
 from src.maze.maze import Maze
 from src.ui.graphics import Graphics
 from src.ui.renderer import Renderer
@@ -21,10 +21,13 @@ def main(argv: list[str]) -> None:
     except ConfigError as e:
         return print(e)
 
-    maze = Maze(MazeGenerator(config_loader.config.level_1_size, seed=config_loader.config.level_1_seed).maze)
     graphics = Graphics()
     renderer = Renderer(graphics)
-    application = Application(config_loader, graphics, renderer)
+
+    try:
+        application = Application(config_loader.config, graphics, renderer)
+    except MazeGenerationError as e:
+        return print(f"Maze generation error occurred: {e}")
     application.run()
 
 

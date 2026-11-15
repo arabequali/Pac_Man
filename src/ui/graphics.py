@@ -1,7 +1,10 @@
 import pygame
 
+from src.maze.maze import Cell
+
 
 class Graphics:
+    """The class that handles the graphics of the application (window, images, drawing pixels)."""
     def __init__(
             self,
         ) -> None:
@@ -53,8 +56,46 @@ class Graphics:
     def put_pixel(self, image: pygame.Surface, x: int, y: int, color: tuple[int, int, int]) -> None:
         image.set_at((x, y), color)
 
-    def put_image(self, image: pygame.Surface, x: int, y: int) -> None:
-        self._window.blit(image, (x, y))
+    def draw_cell(
+            self,
+            image: pygame.Surface,
+            cell: Cell,
+            cell_size: int,
+            x: int,
+            y: int
+        ) -> pygame.Surface:
+        """Draw a cell (cell argument) with open/closed walls in a given surface (image argument)"""
+
+        if cell.north_wall:
+            for px_x in range(cell_size):
+                self.put_pixel(image, px_x + x, 0 + y, (255, 255, 255))
+        if cell.east_wall:
+            for px_y in range(cell_size):
+                self.put_pixel(image, cell_size - 1 + x, px_y + y, (255, 255, 255))
+        if cell.south_wall:
+            for px_x in range(cell_size):
+                self.put_pixel(image, px_x + x, cell_size - 1 + y, (255, 255, 255))
+        if cell.west_wall:
+            for px_y in range(cell_size):
+                self.put_pixel(image, 0 + x, px_y + y, (255, 255, 255))
+        return image
+
+    def put_image_in_image(
+            self,
+            image_dest: pygame.Surface,
+            image_src: pygame.Surface,
+            x: int,
+            y: int
+        ) -> None:
+        image_dest.blit(image_src, (x, y))
+
+    def put_image(
+            self,
+            image: pygame.Surface,
+            x: int,
+            y: int
+    ) -> None:
+        self.window.blit(image, (x, y))
 
     def get_string_size(self, text: str, font_size: int) -> tuple[int, int]:
         font = pygame.font.Font(None, font_size)
