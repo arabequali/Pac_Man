@@ -1,0 +1,15 @@
+{
+    "level_1_seed": 42,
+    "level_1_size": [15, 15],
+    "level_size_increase": 2,
+    "level_max_time": 600,
+    "level_count": 10,
+    "lives": 3,
+    "points_per_pacgum": 10,
+    "points_per_super_pacgum": 100,
+    "points_per_ghosts": 500,
+    "power_duration": 10.0,
+    "ghost_respawn_time": 1,
+    "cheat_mode": false,
+    "highscore_filename_path": "highscore.json"
+}
