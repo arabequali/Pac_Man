@@ -143,13 +143,32 @@ class OptionsScreen(Screen):
             self._selected_option = (self._selected_option - 1) % len(self._options)
         elif action == "KEYDOWN_DOWN":
             self._selected_option = (self._selected_option + 1) % len(self._options)
+        elif action == "KEYDOWN_RIGHT" or action == "KEYDOWN_LEFT":
+            self.config_change(action)
         elif action == "KEYDOWN_RETURN":
-            if self._selected_option == self._options.index("Back"):
+            if self._selected_option == self._options.index("highscore_filename_path"):
+                self.highscore_path_change()
+            elif self._selected_option == self._options.index("Back"):
                 return "main_menu"  # Go back to the main menu
         elif action == "KEYDOWN_ESCAPE":
             return "main_menu"  # Go back to the main menu
 
         return None
+
+    def highscore_path_change(self) -> None:
+        print("But nobody came...")
+
+    def config_change(self, action: Any,) -> None:
+
+        attr_name = self._options[self._selected_option]
+        attr_value = self._config.__getattribute__(attr_name)
+        if self._selected_option == self._options.index("cheat_mode"):
+            self._config.cheat_mode = not self._config.cheat_mode
+        elif isinstance(attr_value, int):
+            if action == "KEYDOWN_RIGHT":
+                self._config.__setattr__(attr_name, attr_value + 1)
+            elif action == "KEYDOWN_LEFT":
+                self._config.__setattr__(attr_name, attr_value - 1)
 
     def update(self, time_elapsed: float) -> None:
         pass
