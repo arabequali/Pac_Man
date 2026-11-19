@@ -155,20 +155,54 @@ class OptionsScreen(Screen):
 
         return None
 
-    def highscore_path_change(self) -> None:
-        print("But nobody came...")
-
     def config_change(self, action: Any,) -> None:
 
-        attr_name = self._options[self._selected_option]
-        attr_value = self._config.__getattribute__(attr_name)
-        if self._selected_option == self._options.index("cheat_mode"):
-            self._config.cheat_mode = not self._config.cheat_mode
-        elif isinstance(attr_value, int):
-            if action == "KEYDOWN_RIGHT":
-                self._config.__setattr__(attr_name, attr_value + 1)
-            elif action == "KEYDOWN_LEFT":
-                self._config.__setattr__(attr_name, attr_value - 1)
+        #  level_1_seed
+        if self._selected_option == self._options.index("level_1_seed"):
+            self._config.change_level_1_seed(action == "KEYDOWN_RIGHT")
+
+        #  level_1_size
+        elif self._selected_option == self._options.index("level_1_size"):
+            self._config.change_level_1_size(action == "KEYDOWN_RIGHT")
+
+        elif self._selected_option == self._options.index("level_size_increase"):
+            self._config.change_level_size_increase(action == "KEYDOWN_RIGHT")
+
+        #  level_count
+        elif self._selected_option == self._options.index("level_count"):
+            self._config.change_level_count(action == "KEYDOWN_RIGHT")
+
+        #  level_max_time
+        elif self._selected_option == self._options.index("level_max_time"):
+            self._config.change_level_max_time(action == "KEYDOWN_RIGHT")
+
+        #  lives
+        elif self._selected_option == self._options.index("lives"):
+            self._config.change_lives(action == "KEYDOWN_RIGHT")
+
+        #  points_per_pacgum
+        elif self._selected_option == self._options.index("points_per_pacgum"):
+            self._config.change_points_per_pacgum(action == "KEYDOWN_RIGHT")
+
+        #  points_per_super_pacgum
+        elif self._selected_option == self._options.index("points_per_super_pacgum"):
+                    self._config.change_points_per_super_pacgum(action == "KEYDOWN_RIGHT")
+        
+        #  points_per_ghosts
+        elif self._selected_option == self._options.index("points_per_ghosts"):
+                    self._config.change_points_per_ghosts(action == "KEYDOWN_RIGHT")
+
+        #  power_duration
+        elif self._selected_option == self._options.index("power_duration"):
+                    self._config.change_power_duration(action == "KEYDOWN_RIGHT")
+
+        #  ghost_respawn_time
+        elif self._selected_option == self._options.index("ghost_respawn_time"):
+                    self._config.change_ghost_respawn_time(action == "KEYDOWN_RIGHT")
+
+        #  cheat_mode
+        elif self._selected_option == self._options.index("cheat_mode"):
+                    self._config.change_cheat_mode()
 
     def update(self, time_elapsed: float) -> None:
         pass

@@ -11,3 +11,8 @@ class GameEngine:
 
         maze = MazeGenerator(config.level_1_size, seed=config.level_1_seed)
         self.current_level = Level(Maze(maze.maze))
+
+    def reload_level(self, config: Config) -> None:
+
+        maze = MazeGenerator(config.level_1_size, seed=config.level_1_seed)
+        self.current_level = Level(Maze(maze.maze))

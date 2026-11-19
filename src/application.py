@@ -68,11 +68,15 @@ class Application:
             self.set_running(False)
         else:
             new_screen = self.screens[self.current_screen_name].handle_actions(actions[0])
-            if new_screen == "game" and self._game_engine is None and self.screens["game"] is None:
-                self._game_engine = GameEngine(self.config)
+            if new_screen == "game":
+                if self._game_engine is None:
+                    self._game_engine = GameEngine(self.config)
+                else:
+                    self._game_engine.reload_level(self.config)
 
                 maze_width, maze_height = self._game_engine.current_level.maze.width, self._game_engine.current_level.maze.height
-                self.screens["game"] = GameScreen(self.config, self._game_engine, self.renderer.get_maze_layout((maze_width, maze_height), self._game_engine))
+                if self.screens["game"] is None:
+                    self.screens["game"] = GameScreen(self.config, self._game_engine, self.renderer.get_maze_layout((maze_width, maze_height), self._game_engine))
 
             if new_screen is not None:
                 self.screens[self.current_screen_name].on_exit()
