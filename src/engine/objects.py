@@ -60,7 +60,7 @@ class PacGum(Static):
 
 class SuperPacGum(Static):
 
-    def __init__(x: int, y: int, asset: Asset) -> None:
+    def __init__(self, x: int, y: int, asset: Asset) -> None:
         super.__init__(x, y, asset, 500)
 
 
@@ -86,7 +86,7 @@ class Moving(Objects):
 
 class Ghost(Moving):
 
-    def __init__(x: int, y: int, asset: Asset) -> None:
+    def __init__(self, x: int, y: int, asset: Asset) -> None:
         super.__init__(x, y, asset)
         self.state : str = "Base"
 
@@ -136,7 +136,7 @@ class Ghost(Moving):
             prio.append(1)
         return(prio)
 
-    def routineScared() -> None:
+    def routineScared(self, pac:Pacman) -> list[int]:
         prio : list[int] = []
         if pac.x == self.x and pac.y == self.y:
             #kill ghost
