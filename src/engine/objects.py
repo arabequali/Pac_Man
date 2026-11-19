@@ -1,5 +1,5 @@
 import pygame
-from src.maze import Maze
+from src.maze.maze import Maze
 
 
 class Asset():
