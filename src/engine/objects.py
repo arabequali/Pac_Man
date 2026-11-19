@@ -1,34 +1,16 @@
 import pygame
 
-from src.maze.maze import Maze
+from src.maze.maze import Maze, Direction
 
 
-Cell = tuple[int, int]  # (x, y) in maze coordinates, y grows downwards
+Cell = tuple[int, int]  #  (x, y) in maze coordinates, y grows downwards
 
 
 class ObjectSet:
-    """Pac-Man, the four ghosts and every pellet of one maze.
-
-    Everything is positioned in maze coordinates (cells), never in pixels.
-    Sealed cells (the maze's closed pattern) are never used.
-
-    Layout rules:
-        - Pac-Man starts on the open cell nearest the middle.
-        - One ghost and one super-pacgum sit on the open cell nearest each
-          corner. Ghosts are ordered top-left, top-right, bottom-left,
-          bottom-right, so a ghost's index can identify it (its colour).
-        - A pacgum sits on every other open cell.
-    """
+    """Pac-Man, the four ghosts and every pellet of one maze."""
 
     def __init__(self, maze: Maze) -> None:
-        """Place every object on the maze.
-
-        Args:
-            maze: the maze of the level.
-
-        Raises:
-            ValueError: the maze has no open cell.
-        """
+        """Place every object on the maze."""
         open_cells = self._open_cells(maze)
         if not open_cells:
             raise ValueError("The maze has no open cell.")
@@ -41,23 +23,25 @@ class ObjectSet:
         ]
         taken = {spawn, *corners}
 
-        self.pacman: Pacman = Pacman(spawn[0], spawn[1], None)
-        self.ghosts: list[Ghost] = [Ghost(x, y, None) for x, y in corners]
+        self.pacman: Pacman = Pacman(spawn[0], spawn[1])
+        self.ghosts: list[Ghost] = [Ghost(x, y) for x, y in corners]
         self.super_pacgums: list[SuperPacGum] = [
-            SuperPacGum(x, y, None) for x, y in corners
+            SuperPacGum(x, y) for x, y in corners
         ]
         self.pacgums: list[PacGum] = [
-            PacGum(x, y, None) for x, y in open_cells if (x, y) not in taken
+            PacGum(x, y) for x, y in open_cells if (x, y) not in taken
         ]
 
     @property
     def remaining_pacgums(self) -> int:
-        """Number of pacgums not eaten yet (the level is won at 0)."""
+        """Number of pacgums not eaten yet"""
+
         return sum(1 for pacgum in self.pacgums if pacgum.active)
 
     @staticmethod
     def _open_cells(maze: Maze) -> list[Cell]:
-        """Every cell that is not sealed, row by row."""
+        """Every cell that is not sealed"""
+
         return [
             (x, y)
             for y in range(maze.height)
@@ -67,11 +51,8 @@ class ObjectSet:
 
     @staticmethod
     def _nearest(cells: list[Cell], target_x: int, target_y: int) -> Cell:
-        """The cell closest to a target (Manhattan distance).
+        """The cell closest to a target."""
 
-        Ties are broken by position, so the same maze always gives the
-        same result.
-        """
         return min(
             cells,
             key=lambda c: (abs(c[0] - target_x) + abs(c[1] - target_y),
@@ -89,92 +70,59 @@ class ObjectSet:
         ]
 
 
-class Asset():
-
-    def __init__(
-        self,
-        asset_path: str,
-        size_w: int = None,
-        size_h: int = None
-    ) -> None:
-        self.asset_path : str = asset_path
-        self.size_w: int = size_w
-        self.size_h: int = size_h
-        self.asset = self._load_asset()
-
-    def _load_asset(self) -> None:
-        image = pygame.image.load(self.asset_path)
-        if (self.size_w) and (self.size_h):
-            image = pygame.transform.scale(image, (self.size_w, self.size_h))
-        return (image)
-
-    def resize_asset(
-        self,
-        width: int,
-        height: int
-    ) -> None:
-        self.asset = pygame.transform.scale(self.asset, (width, height))
-
-    def display_asset(
-        self,
-        surface: pygame.Surface,
-        display_x: int,
-        display_y: int
-    ) -> None:
-        surface.blit(self.asset, (surface.get_width() / display_x - self.asset.get_width() / 2, surface.get_height() / display_y - self.asset.get_height() / 2))
-
 class Objects():
 
-    def __init__(self, x: int, y: int, asset: Asset) -> None:
+    def __init__(self, x: int, y: int) -> None:
         self.x : int = x
         self.y : int = y
-        self.asset : str = asset
 
 
 class Static(Objects):
 
-    def __init__(self, x: int, y: int, asset: Asset, score: int) -> None:
-        super().__init__(x, y, asset)
+    def __init__(self, x: int, y: int, score: int) -> None:
+        super().__init__(x, y)
         self.active : bool = True
         self.score : int = score
 
 
 class PacGum(Static):
 
-    def __init__(self, x: int, y: int, asset: Asset) -> None:
-        super().__init__(x, y, asset, 100)
+    def __init__(self, x: int, y: int) -> None:
+        super().__init__(x, y, 100)
 
 
 class SuperPacGum(Static):
 
-    def __init__(self, x: int, y: int, asset: Asset) -> None:
-        super().__init__(x, y, asset, 500)
+    def __init__(self, x: int, y: int) -> None:
+        super().__init__(x, y, 500)
 
 
 class Moving(Objects):
 
-    def __init__(self, x: int, y: int, asset: Asset) -> None:
-        super().__init__(x, y, asset)
+    def __init__(self, x: int, y: int) -> None:
+        super().__init__(x, y)
         self.startx : int = x
         self.starty : int = y
 
-    def move(self, direction: int) -> None:
-        match direction:
-                case 0:
-                    self.x -= 1
-                case 1:
-                    self.y += 1
-                case 2:
-                    self.x += 1
-                case 3:
-                    self.y -= 1
-
+    def move(
+            self,
+            direction: Direction,
+            cell_size: int
+        ) -> None:
+        if direction == Direction.NORTH:
+            self.y -= 1
+        elif direction == Direction.EAST:
+            self.x += 1
+        elif direction == Direction.SOUTH:
+            self.y += 1
+        elif direction == Direction.WEST:
+            self.x -= 1
 
 
 class Ghost(Moving):
 
-    def __init__(self, x: int, y: int, asset: Asset) -> None:
-        super().__init__(x, y, asset)
+    def __init__(self, x: int, y: int) -> None:
+        super().__init__(x, y)
         self.state : str = "Base"
 
     def routine(self, pac, maze: Maze):
@@ -208,7 +156,7 @@ class Ghost(Moving):
     def routineBase(self, pac) -> list[int]:
         prio : list[int] = []
         if pac.x == self.x and pac.y == self.y:
-            #kill pacman
+            #  kill pacman
             pass
         if abs(self.x - pac.x) < abs(self.y - pac.y):
             prio.append(0)
@@ -245,38 +193,25 @@ class Ghost(Moving):
 
 class Pacman(Moving):
 
-    def __init__(self, x: int, y: int, asset: Asset) -> None:
-        super().__init__(x, y, asset)
-        self.direction : int = 0
-
-    def pacmove(self, key_pressed: int, width_wall: int, height_wall: int, maze) -> None:
-        if key_pressed == 0 and maze.can_go(self.x, self.y, 0):
-            self.y -= height_wall
-        if key_pressed == 1 and maze.can_go(self.x, self.y, 1):
-            self.x += width_wall
-        if key_pressed == 2 and maze.can_go(self.x, self.y, 2):
-            self.y += height_wall
-        if key_pressed == 3 and maze.can_go(self.x, self.y, 3):
-            self.x -= width_wall
+    def __init__(self, x: int, y: int) -> None:
+        super().__init__(x, y)
+        self.direction: Direction | None = Direction.EAST
+        self.mouth_open: bool = True
 
     #direction: up = 0, right = 1, down = 2, left = 3
-    def set_direction(self, dir: int) -> None:
-        if (dir < 0 or dir > 3):
-            print("invalid direction value")
-        else:
-            self.direction = dir
-        
+    def set_direction(self, dir: Direction) -> None:
+        self.direction = dir
 
-    def routine(self, maze: Maze):
-        if maze.can_go(self.x, self.y, self.direction):
-            self.move(self.direction)
-        else:
-            self.set_direction((self.direction + 2) % 4)
-            if maze.can_go(self.x, self.y, self.direction):
-                self.move(self.direction)
-            else:
-                self.set_direction((self.direction + 2) % 4)
+    def routine(
+            self,
+            maze: Maze,
+            cell_size: int,
+            direction: Direction = None
+        ):
 
-
+        if direction:
+            self.set_direction(direction)
+        if maze.can_move(self.x, self.y, self.direction):
+            self.move(self.direction, cell_size)
 
 #dans le programme principal, tous les cycles, appeler toutes les routines

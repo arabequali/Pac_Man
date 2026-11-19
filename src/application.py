@@ -6,11 +6,14 @@ from src.config.models import Config
 
 from src.ui.graphics import Graphics
 from src.ui.renderer import Renderer
-from src.ui.screens import GameScreen, MainMenuScreen, ExitScreen, HighscoreScreen, OptionsScreen
+from src.ui.screens import GameScreen, WinScreen, MainMenuScreen, ExitScreen, HighscoreScreen, OptionsScreen
 from src.ui.sprites import SpriteBuilder
 
 from src.engine.engine import GameEngine
 from src.engine.objects import ObjectSet
+
+
+MAX_DT = 1 / 60
 
 
 class Application:
@@ -33,6 +36,7 @@ class Application:
             "highscores": HighscoreScreen(),
             "options": OptionsScreen(self.config),
             "game": None,  # GameScreen will be initialized when the game starts
+            "win": None,  # WinScreen will be initialized when the game is won
             "exit": ExitScreen()
         }
         self.current_screen_name: str = "main_menu"
@@ -80,8 +84,7 @@ class Application:
                 maze_width, maze_height = self._game_engine.current_level.maze.width, self._game_engine.current_level.maze.height
                 maze_layout = self.renderer.get_maze_layout((maze_width, maze_height), self._game_engine)
                 sprite_set = SpriteBuilder(self.graphics, maze_layout.cell_size).build()
-                object_set = ObjectSet(self._game_engine.current_level.maze)
-                self.screens["game"] = GameScreen(self.config, self._game_engine, maze_layout, sprite_set, object_set)
+                self.screens["game"] = GameScreen(self.config, self._game_engine, maze_layout, sprite_set)
 
             if new_screen is not None:
                 self.screens[self.current_screen_name].on_exit()
@@ -89,8 +92,22 @@ class Application:
                 self.screens[self.current_screen_name].on_enter()
 
     def draw_current_screen(self) -> None:
+
         current_screen = self.screens[self.current_screen_name]
-        current_screen.update(self.get_time_elapsed())
+
+        update_result = current_screen.update(self.get_time_elapsed())
+        if update_result == "level":
+            maze_width, maze_height = self._game_engine.current_level.maze.width, self._game_engine.current_level.maze.height
+            maze_layout = self.renderer.get_maze_layout((maze_width, maze_height), self._game_engine)
+            sprite_set = SpriteBuilder(self.graphics, maze_layout.cell_size).build()
+            game_screen: GameScreen = self.screens.get("game")
+            game_screen.set_maze_layout(maze_layout)
+            game_screen.set_sprite_set(sprite_set)
+
+        elif update_result == "win":
+            self.current_screen_name = "win"
+            self.screens[self.current_screen_name] = WinScreen(self.screens["game"])
+
         self.graphics.clear_window((0, 0, 0))  # Clear the window with black color.
         current_screen.draw(self.graphics)
         self.graphics.update_window()  # Display the new frame drawn before.
@@ -110,5 +127,6 @@ class Application:
                 self.handle_events(actions)
 
             self.draw_current_screen()
+            time.sleep(0.001)
 
         self.graphics.close_window()

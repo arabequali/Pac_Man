@@ -226,14 +226,22 @@ class GameScreen(Screen):
             game_engine: GameEngine,
             maze_layout: MazeLayout,
             sprite_set: SpriteSet,
-            object_set
         ) -> None:
         super().__init__()
         self._config = config
         self._game_engine = game_engine
         self.maze_layout = maze_layout
         self.sprite_set = sprite_set
-        self.object_set = object_set
+        self.current_action = None
+        self.timer = 0.0
+
+    def set_maze_layout(self, maze_layout: MazeLayout) -> None:
+
+         self.maze_layout = maze_layout
+
+    def set_sprite_set(self, sprite_set: SpriteSet) -> None:
+
+         self.sprite_set = sprite_set
 
     def set_config(self, config: Config) -> None:
         self._config = config
@@ -242,11 +250,40 @@ class GameScreen(Screen):
 
         if action == "KEYDOWN_ESCAPE":
             return "main_menu"  # Go back to the main menu
+        else:
+             self.current_action = action
 
         return None
 
     def update(self, time_elapsed: float) -> str | None:
         # Update game state here
+        self.timer += time_elapsed
+        if self.timer >= 0.15:
+            self.timer -= 0.15
+            if self.current_action == "KEYDOWN_N" and self._config.cheat_mode:
+                for row in range(len(self._game_engine.current_level.visited)):
+                      for cell in range(len(self._game_engine.current_level.visited[0])):
+                           self._game_engine.current_level.visited[row][cell] = True
+
+            if self._game_engine.current_level.all_visited():
+                 if self._game_engine.level_number == 10:
+                      return "win"
+                 self._game_engine.level_number += 1
+                 self._game_engine.next_level(self._config)
+                 return "level"
+
+            if self.current_action == "KEYDOWN_UP":
+                self._game_engine.start_routines(self.maze_layout.cell_size, Direction.NORTH)
+            elif self.current_action == "KEYDOWN_RIGHT":
+                 self._game_engine.start_routines(self.maze_layout.cell_size, Direction.EAST)
+            elif self.current_action == "KEYDOWN_DOWN":
+                self._game_engine.start_routines(self.maze_layout.cell_size, Direction.SOUTH)
+            elif self.current_action == "KEYDOWN_LEFT":
+                self._game_engine.start_routines(self.maze_layout.cell_size, Direction.WEST)
+            else:
+                self._game_engine.start_routines(self.maze_layout.cell_size)
+            self._game_engine.object_set.pacman.mouth_open = not self._game_engine.object_set.pacman.mouth_open
+
         return None
 
     def draw(
@@ -255,26 +292,62 @@ class GameScreen(Screen):
         ) -> None:
         """Draw the whole game."""
 
+        object_set = self._game_engine.object_set
+
+        #  Drawing the maze
         maze_image = self.maze_layout.maze_image
         width_offset = self.maze_layout.width_offset // 2
         height_offset = self.maze_layout.height_offset // 2
-
         graphics.put_image(maze_image, width_offset, height_offset)
 
-        pacman_maze_x, pacman_maze_y = self.object_set.pacman.x, self.object_set.pacman.y
-        pacman_pos_x, pacman_pos_y = self.maze_layout.convert_maze_coordinates(pacman_maze_x, pacman_maze_y)
-        graphics.put_image(self.sprite_set.get_pacman(Direction.EAST, True), pacman_pos_x, pacman_pos_y)
+        graphics.draw_string(width_offset, height_offset // 2, f"Score: {self._game_engine.current_level.score}", 30, (255, 255, 255))
+        graphics.draw_string(width_offset + 2 * graphics.get_string_size(f"Score: {self._game_engine.current_level.score}", 30)[0], height_offset // 2, f"Level: {self._game_engine.level_number}", 30, (255, 255, 255))
+        graphics.draw_string(width_offset, graphics.window.get_size()[1] - height_offset // 2, "Cheat commands: Next Level - N", 30, (255, 255, 255))
 
-        for pacgum in self.object_set.pacgums:
-             pacgum_pos_x, pacgum_pos_y = self.maze_layout.convert_maze_coordinates(pacgum.x, pacgum.y)
-             graphics.put_image(self.sprite_set.pacgum, pacgum_pos_x, pacgum_pos_y)
-        # Draw game elements here
+        #  Drawing PacGums
+        for pacgum in object_set.pacgums:
+                pacgum_pos_x, pacgum_pos_y = self.maze_layout.convert_maze_coordinates(pacgum.x, pacgum.y)
+                if not self._game_engine.current_level.visited[pacgum.y][pacgum.x]:
+                    graphics.put_image(self.sprite_set.pacgum, pacgum_pos_x, pacgum_pos_y)
 
-        for super_pacgum in self.object_set.super_pacgums:
+        #  Drawing Super Pacgums
+        for super_pacgum in object_set.super_pacgums:
              s_pacgum_x, s_pacgum_y = self.maze_layout.convert_maze_coordinates(super_pacgum.x, super_pacgum.y)
              graphics.put_image(self.sprite_set.super_pacgum, s_pacgum_x, s_pacgum_y)
+
+        #  Drawing PacMan
+        pacman_maze_x, pacman_maze_y = object_set.pacman.x, object_set.pacman.y
+        pacman_pos_x, pacman_pos_y = self.maze_layout.convert_maze_coordinates(pacman_maze_x, pacman_maze_y)
+        graphics.put_image(self.sprite_set.get_pacman(object_set.pacman.direction, object_set.pacman.mouth_open), pacman_pos_x, pacman_pos_y)
 
     def on_enter(
             self,
         ) -> None:
-        pass  # Initialize game state when entering the game screen
+        pass  #  Initialize game state when entering the game screen
+
+
+class WinScreen(Screen):
+
+     def __init__(
+               self,
+               game_screen: GameScreen,
+     ) -> None:
+
+          self.game_screen = game_screen
+          self.current_action = None
+
+     def handle_actions(self, action: Any) -> str | None:
+
+          if action == "KEYDOWN_RETURN" or action == "KEYDOWN_ESCAPE":
+               self.current_action = "quit"
+
+     def update(self, time_elapsed: float) -> None:
+          pass
+
+     def draw(self, graphics: Graphics) -> None:
+
+          if not self.current_action:
+               self.game_screen.draw(graphics)
+               window_x, window_y = graphics.window.get_size()
+               win_str_x, win_str_y = graphics.get_string_size("You won !", 100)
+               graphics.draw_string(window_x // 2 - win_str_x // 2, window_y // 2 - win_str_y, "You won !", 100, (255, 255, 0))
