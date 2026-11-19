@@ -3,12 +3,14 @@ from typing import Any
 
 from src.config.models import Config
 
-from src.maze.maze import Cell
+from src.maze.maze import Cell, Direction
 
 from src.ui.graphics import Graphics
 from src.ui.renderer import MazeLayout
+from src.ui.sprites import SpriteSet
 
 from src.engine.engine import GameEngine
+from src.engine.objects import ObjectSet
 
 
 class Screen(ABC):
@@ -146,9 +148,7 @@ class OptionsScreen(Screen):
         elif action == "KEYDOWN_RIGHT" or action == "KEYDOWN_LEFT":
             self.config_change(action)
         elif action == "KEYDOWN_RETURN":
-            if self._selected_option == self._options.index("highscore_filename_path"):
-                self.highscore_path_change()
-            elif self._selected_option == self._options.index("Back"):
+            if self._selected_option == self._options.index("Back"):
                 return "main_menu"  # Go back to the main menu
         elif action == "KEYDOWN_ESCAPE":
             return "main_menu"  # Go back to the main menu
@@ -224,12 +224,16 @@ class GameScreen(Screen):
             self,
             config: Config,
             game_engine: GameEngine,
-            maze_layout: MazeLayout
+            maze_layout: MazeLayout,
+            sprite_set: SpriteSet,
+            object_set
         ) -> None:
         super().__init__()
         self._config = config
         self._game_engine = game_engine
         self.maze_layout = maze_layout
+        self.sprite_set = sprite_set
+        self.object_set = object_set
 
     def set_config(self, config: Config) -> None:
         self._config = config
@@ -254,7 +258,12 @@ class GameScreen(Screen):
         maze_image = self.maze_layout.maze_image
         width_offset = self.maze_layout.width_offset // 2
         height_offset = self.maze_layout.height_offset // 2
+
         graphics.put_image(maze_image, width_offset, height_offset)
+
+        pacman_maze_x, pacman_maze_y = self.object_set.pacman.x, self.object_set.pacman.y
+        pacman_pos_x, pacman_pos_y = self.maze_layout.convert_maze_coordinates(pacman_maze_x, pacman_maze_y)
+        graphics.put_image(self.sprite_set.get_pacman(Direction.EAST, True), pacman_pos_x, pacman_pos_y)
         # Draw game elements here
 
     def on_enter(

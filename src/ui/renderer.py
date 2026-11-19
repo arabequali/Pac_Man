@@ -41,6 +41,10 @@ class MazeLayout:
 
         return maze_image
 
+    def convert_maze_coordinates(self, x: int, y: int) -> tuple[int]:
+
+        return ((self.width_offset // 2 + self.cell_size * x), (self.height_offset // 2 + self.cell_size * y))
+
 
 class Renderer:
     """The class that handles the rendering of the application (calculate sizes)."""

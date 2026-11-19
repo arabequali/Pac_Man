@@ -36,7 +36,7 @@ def main(argv: list[str]) -> None:
 
     try:
         application.run()
-    except Exception as e:
+    except KeyError as e:
         print(e)
     with open(argv[1], 'w') as config_file:
         json.dump(application.config.model_dump(), config_file)

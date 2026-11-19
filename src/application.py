@@ -7,8 +7,10 @@ from src.config.models import Config
 from src.ui.graphics import Graphics
 from src.ui.renderer import Renderer
 from src.ui.screens import GameScreen, MainMenuScreen, ExitScreen, HighscoreScreen, OptionsScreen
+from src.ui.sprites import SpriteBuilder
 
 from src.engine.engine import GameEngine
+from src.engine.objects import ObjectSet
 
 
 class Application:
@@ -20,6 +22,7 @@ class Application:
             graphics: Graphics,
             renderer: Renderer,
         ) -> None:
+
         self._config = config
         self._graphics = graphics
         self._renderer = renderer
@@ -75,8 +78,10 @@ class Application:
                     self._game_engine.reload_level(self.config)
 
                 maze_width, maze_height = self._game_engine.current_level.maze.width, self._game_engine.current_level.maze.height
-                if self.screens["game"] is None:
-                    self.screens["game"] = GameScreen(self.config, self._game_engine, self.renderer.get_maze_layout((maze_width, maze_height), self._game_engine))
+                maze_layout = self.renderer.get_maze_layout((maze_width, maze_height), self._game_engine)
+                sprite_set = SpriteBuilder(self.graphics, maze_layout.cell_size).build()
+                object_set = ObjectSet(self._game_engine.current_level.maze)
+                self.screens["game"] = GameScreen(self.config, self._game_engine, maze_layout, sprite_set, object_set)
 
             if new_screen is not None:
                 self.screens[self.current_screen_name].on_exit()
@@ -99,7 +104,7 @@ class Application:
         self.graphics.open_window()
         self.set_running(True)
         while self.running:
-            # Handle events
+            #  Handle events
             actions = self.graphics.get_actions()
             if len(actions) > 0:
                 self.handle_events(actions)

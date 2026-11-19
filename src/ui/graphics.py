@@ -3,6 +3,10 @@ import pygame
 from src.maze.maze import Cell
 
 
+Image = pygame.Surface
+Color = tuple[int, int, int] | tuple[int, int, int, int]
+
+
 class Graphics:
     """The class that handles the graphics of the application (window, images, drawing pixels)."""
     def __init__(
@@ -50,7 +54,15 @@ class Graphics:
     def close_window(self) -> None:
         pygame.quit()
 
-    def new_image(self, width: int, height: int) -> pygame.Surface:
+    def new_image(
+            self,
+            width: int,
+            height: int,
+            transparent: bool = False
+        ) -> pygame.Surface:
+        """Create an image: opaque black, or fully transparent."""
+        if transparent:
+            return pygame.Surface((width, height), pygame.SRCALPHA)
         return pygame.Surface((width, height))
 
     def put_pixel(self, image: pygame.Surface, x: int, y: int, color: tuple[int, int, int]) -> None:

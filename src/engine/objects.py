@@ -1,5 +1,30 @@
 import pygame
+
 from src.maze.maze import Maze
+
+
+Cell = tuple[int, int]  # (x, y) in maze coordinates, y grows downwards
+
+
+class ObjectSet:
+
+    def __init__(self, maze: Maze) -> None:
+
+        spawn = maze.width // 2, maze.height // 2
+        right, bottom = maze.width - 1, maze.height - 1
+        corners = [
+            (x, y)
+            for x, y in ((0, 0), (right, 0), (0, bottom), (right, bottom))
+        ]
+        taken = {spawn, *corners}
+
+        self.pacman: Pacman = Pacman(spawn[0], spawn[1], None)
+        self.ghosts: list[Ghost] = [Ghost(x, y, None) for x, y in corners]
+        self.super_pacgums: list[SuperPacGum] = [
+            SuperPacGum(x, y, None) for x, y in corners
+        ]
+
+
 
 
 class Asset():
@@ -61,7 +86,7 @@ class PacGum(Static):
 class SuperPacGum(Static):
 
     def __init__(self, x: int, y: int, asset: Asset) -> None:
-        super.__init__(x, y, asset, 500)
+        super().__init__(x, y, asset, 500)
 
 
 class Moving(Objects):
@@ -87,10 +112,10 @@ class Moving(Objects):
 class Ghost(Moving):
 
     def __init__(self, x: int, y: int, asset: Asset) -> None:
-        super.__init__(x, y, asset)
+        super().__init__(x, y, asset)
         self.state : str = "Base"
 
-    def routine(self, pac: Pacman, maze: Maze):
+    def routine(self, pac, maze: Maze):
         prio : list[int] = []
         if self.state == "Base":
             self.routineBase(pac)
@@ -118,10 +143,11 @@ class Ghost(Moving):
                 self.move(i)
                 break
 
-    def routineBase(self, pac:Pacman) -> list[int]:
+    def routineBase(self, pac) -> list[int]:
         prio : list[int] = []
         if pac.x == self.x and pac.y == self.y:
             #kill pacman
+            pass
         if abs(self.x - pac.x) < abs(self.y - pac.y):
             prio.append(0)
         else:
@@ -136,10 +162,11 @@ class Ghost(Moving):
             prio.append(1)
         return(prio)
 
-    def routineScared(self, pac:Pacman) -> list[int]:
+    def routineScared(self, pac) -> list[int]:
         prio : list[int] = []
         if pac.x == self.x and pac.y == self.y:
             #kill ghost
+            pass
         if abs(self.x - pac.x) < abs(self.y - pac.y):
             prio.append(0)
         else:
@@ -171,7 +198,7 @@ class Pacman(Moving):
             self.x -= width_wall
 
     #direction: up = 0, right = 1, down = 2, left = 3
-    def set_direction(dir: int) -> None:
+    def set_direction(self, dir: int) -> None:
         if (dir < 0 or dir > 3):
             print("invalid direction value")
         else:
@@ -179,11 +206,11 @@ class Pacman(Moving):
         
 
     def routine(self, maze: Maze):
-        if maze.can_go(x, y, self.direction):
+        if maze.can_go(self.x, self.y, self.direction):
             self.move(self.direction)
         else:
             self.set_direction((self.direction + 2) % 4)
-            if maze.can_go(x, y, self.direction):
+            if maze.can_go(self.x, self.y, self.direction):
                 self.move(self.direction)
             else:
                 self.set_direction((self.direction + 2) % 4)
