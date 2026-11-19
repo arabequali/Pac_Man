@@ -7,13 +7,36 @@ Cell = tuple[int, int]  # (x, y) in maze coordinates, y grows downwards
 
 
 class ObjectSet:
+    """Pac-Man, the four ghosts and every pellet of one maze.
+
+    Everything is positioned in maze coordinates (cells), never in pixels.
+    Sealed cells (the maze's closed pattern) are never used.
+
+    Layout rules:
+        - Pac-Man starts on the open cell nearest the middle.
+        - One ghost and one super-pacgum sit on the open cell nearest each
+          corner. Ghosts are ordered top-left, top-right, bottom-left,
+          bottom-right, so a ghost's index can identify it (its colour).
+        - A pacgum sits on every other open cell.
+    """
 
     def __init__(self, maze: Maze) -> None:
+        """Place every object on the maze.
 
-        spawn = maze.width // 2, maze.height // 2
+        Args:
+            maze: the maze of the level.
+
+        Raises:
+            ValueError: the maze has no open cell.
+        """
+        open_cells = self._open_cells(maze)
+        if not open_cells:
+            raise ValueError("The maze has no open cell.")
+
+        spawn = self._nearest(open_cells, maze.width // 2, maze.height // 2)
         right, bottom = maze.width - 1, maze.height - 1
         corners = [
-            (x, y)
+            self._nearest(open_cells, x, y)
             for x, y in ((0, 0), (right, 0), (0, bottom), (right, bottom))
         ]
         taken = {spawn, *corners}
@@ -23,8 +46,47 @@ class ObjectSet:
         self.super_pacgums: list[SuperPacGum] = [
             SuperPacGum(x, y, None) for x, y in corners
         ]
+        self.pacgums: list[PacGum] = [
+            PacGum(x, y, None) for x, y in open_cells if (x, y) not in taken
+        ]
 
+    @property
+    def remaining_pacgums(self) -> int:
+        """Number of pacgums not eaten yet (the level is won at 0)."""
+        return sum(1 for pacgum in self.pacgums if pacgum.active)
 
+    @staticmethod
+    def _open_cells(maze: Maze) -> list[Cell]:
+        """Every cell that is not sealed, row by row."""
+        return [
+            (x, y)
+            for y in range(maze.height)
+            for x in range(maze.width)
+            if not maze.cell_sealed(x, y)
+        ]
+
+    @staticmethod
+    def _nearest(cells: list[Cell], target_x: int, target_y: int) -> Cell:
+        """The cell closest to a target (Manhattan distance).
+
+        Ties are broken by position, so the same maze always gives the
+        same result.
+        """
+        return min(
+            cells,
+            key=lambda c: (abs(c[0] - target_x) + abs(c[1] - target_y),
+                           c[1], c[0]),
+        )
+
+    @staticmethod
+    def _open_cells(maze: Maze) -> list[Cell]:
+        """Every cell that is not sealed, row by row."""
+        return [
+            (x, y)
+            for y in range(maze.height)
+            for x in range(maze.width)
+            if not maze.cell_sealed(x, y)
+        ]
 
 
 class Asset():

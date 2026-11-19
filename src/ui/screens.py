@@ -264,7 +264,15 @@ class GameScreen(Screen):
         pacman_maze_x, pacman_maze_y = self.object_set.pacman.x, self.object_set.pacman.y
         pacman_pos_x, pacman_pos_y = self.maze_layout.convert_maze_coordinates(pacman_maze_x, pacman_maze_y)
         graphics.put_image(self.sprite_set.get_pacman(Direction.EAST, True), pacman_pos_x, pacman_pos_y)
+
+        for pacgum in self.object_set.pacgums:
+             pacgum_pos_x, pacgum_pos_y = self.maze_layout.convert_maze_coordinates(pacgum.x, pacgum.y)
+             graphics.put_image(self.sprite_set.pacgum, pacgum_pos_x, pacgum_pos_y)
         # Draw game elements here
+
+        for super_pacgum in self.object_set.super_pacgums:
+             s_pacgum_x, s_pacgum_y = self.maze_layout.convert_maze_coordinates(super_pacgum.x, super_pacgum.y)
+             graphics.put_image(self.sprite_set.super_pacgum, s_pacgum_x, s_pacgum_y)
 
     def on_enter(
             self,
