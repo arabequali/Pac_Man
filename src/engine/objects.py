@@ -197,6 +197,7 @@ class Pacman(Moving):
         super().__init__(x, y)
         self.direction: Direction | None = Direction.EAST
         self.mouth_open: bool = True
+        self.is_super = False
 
     #direction: up = 0, right = 1, down = 2, left = 3
     def set_direction(self, dir: Direction) -> None:

@@ -328,18 +328,30 @@ class GameScreen(Screen):
 
 class WinScreen(Screen):
 
-     def __init__(
-               self,
-               game_screen: GameScreen,
-     ) -> None:
+     def __init__(self) -> None:
 
-          self.game_screen = game_screen
           self.current_action = None
+          self.string_buffer: str = ""
 
      def handle_actions(self, action: Any) -> str | None:
 
-          if action == "KEYDOWN_RETURN" or action == "KEYDOWN_ESCAPE":
-               self.current_action = "quit"
+        if action == "KEYDOWN_ESCAPE":
+           self.current_action = "quit"
+        elif action == "KEYDOWN_RETURN":
+             return self.string_buffer
+        elif action == "KEYDOWN_BACKSPACE":
+            self.string_buffer = self.string_buffer[:-1]
+        elif action.startswith("KEYDOWN_") and len(self.string_buffer) <= 10:
+             self.typing_name(action)
+
+     def typing_name(self, action: Any) -> None:
+
+          if action == "KEYDOWN_SPACE":
+               self.string_buffer += " "
+               return
+          letter_pressed = str(action).replace("KEYDOWN_", "")
+          if len(letter_pressed) == 1:
+              self.string_buffer += letter_pressed
 
      def update(self, time_elapsed: float) -> None:
           pass
@@ -347,7 +359,22 @@ class WinScreen(Screen):
      def draw(self, graphics: Graphics) -> None:
 
           if not self.current_action:
-               self.game_screen.draw(graphics)
+               
                window_x, window_y = graphics.window.get_size()
-               win_str_x, win_str_y = graphics.get_string_size("You won !", 100)
-               graphics.draw_string(window_x // 2 - win_str_x // 2, window_y // 2 - win_str_y, "You won !", 100, (255, 255, 0))
+
+               win_str_size = graphics.get_string_size("You won !", 100)
+               win_str_x = window_x // 2 - win_str_size[0] // 2
+               win_str_y = window_y // 2 - win_str_size[1]
+
+               username_str_size = graphics.get_string_size(self.string_buffer, 90)
+               username_str_x = window_x // 2 - username_str_size[0] // 2
+               username_str_y = window_y // 2 - username_str_size[1] + win_str_size[1] * 2
+
+               commands_str = "Escape to quit without saving | Enter to save your name"
+               commands_str_size = graphics.get_string_size(commands_str, 60)
+               commands_str_x = window_x // 2 - commands_str_size[0] // 2
+               commands_str_y = window_y // 2 - username_str_size[1] + win_str_size[1] * 2 + username_str_size[1] * 2
+
+               graphics.draw_string(win_str_x, window_y // 2 - win_str_y, "You won !", 100, (255, 255, 0))
+               graphics.draw_string(username_str_x, username_str_y, self.string_buffer, 90, (255, 255, 255))
+               graphics.draw_string(commands_str_x, commands_str_y, commands_str, 60, (255, 255, 255))

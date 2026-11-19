@@ -106,7 +106,7 @@ class Application:
 
         elif update_result == "win":
             self.current_screen_name = "win"
-            self.screens[self.current_screen_name] = WinScreen(self.screens["game"])
+            self.screens[self.current_screen_name] = WinScreen()
 
         self.graphics.clear_window((0, 0, 0))  # Clear the window with black color.
         current_screen.draw(self.graphics)
