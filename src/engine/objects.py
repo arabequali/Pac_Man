@@ -99,10 +99,11 @@ class SuperPacGum(Static):
 
 class Moving(Objects):
 
-    def __init__(self, x: int, y: int) -> None:
+    def __init__(self, x: int, y: int, state: str) -> None:
         super().__init__(x, y)
         self.startx : int = x
         self.starty : int = y
+        self.state = state
 
     def move(
             self,
@@ -118,18 +119,20 @@ class Moving(Objects):
         elif direction == Direction.WEST:
             self.x -= 1
 
+    def set_state(self, state: str) -> None:
+        self.state = state
+
 
 class Ghost(Moving):
 
     def __init__(self, x: int, y: int) -> None:
-        super().__init__(x, y)
-        self.state : str = "Base"
+        super().__init__(x, y, "Base")
 
     def routine(self, pac, maze: Maze):
         prio : list[int] = []
         if self.state == "Base":
             self.routineBase(pac)
-        else:
+        elif self.state == "Scared":
             self.routineScared(pac)
         match prio:
             case [0, 0, 0]:
@@ -156,7 +159,7 @@ class Ghost(Moving):
     def routineBase(self, pac) -> list[int]:
         prio : list[int] = []
         if pac.x == self.x and pac.y == self.y:
-            #  kill pacman
+            pac.set_state("Dead")
             pass
         if abs(self.x - pac.x) < abs(self.y - pac.y):
             prio.append(0)
@@ -175,7 +178,7 @@ class Ghost(Moving):
     def routineScared(self, pac) -> list[int]:
         prio : list[int] = []
         if pac.x == self.x and pac.y == self.y:
-            #kill ghost
+            self.set_state("Dead")
             pass
         if abs(self.x - pac.x) < abs(self.y - pac.y):
             prio.append(0)
@@ -194,10 +197,11 @@ class Ghost(Moving):
 class Pacman(Moving):
 
     def __init__(self, x: int, y: int) -> None:
-        super().__init__(x, y)
+        super().__init__(x, y, "Alive")
         self.direction: Direction | None = Direction.EAST
         self.mouth_open: bool = True
-        self.is_super = False
+        self.is_super : bool = False
+        self.visited : list[list[int]] = []
 
     #direction: up = 0, right = 1, down = 2, left = 3
     def set_direction(self, dir: Direction) -> None:
@@ -214,5 +218,7 @@ class Pacman(Moving):
             self.set_direction(direction)
         if maze.can_move(self.x, self.y, self.direction):
             self.move(self.direction, cell_size)
+            if [x, y] not in self.visited:
+                visited.append([x, y]) #desactiver la pacgum a ces coords
 
 #dans le programme principal, tous les cycles, appeler toutes les routines
