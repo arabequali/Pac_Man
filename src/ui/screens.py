@@ -15,6 +15,9 @@ from src.engine.objects import ObjectSet, GhostLook
 from src.scores.highscores import HighscoreManager
 
 
+MOVE_INTERVAL = 0.15
+
+
 class Screen(ABC):
     """Base class for all screens in the application."""
 
@@ -247,6 +250,7 @@ class GameScreen(Screen):
         self.maze_layout = maze_layout
         self.sprite_set = sprite_set
         self.current_action = None
+        self.next_direction = None
         self.timer = 0.0
 
     def set_maze_layout(self, maze_layout: MazeLayout) -> None:
@@ -263,9 +267,17 @@ class GameScreen(Screen):
     def handle_actions(self, action: Any) -> str | None:
 
         if action == "KEYDOWN_ESCAPE":
-            return "main_menu"  # Go back to the main menu
-        else:
-             self.current_action = action
+            return "main_menu"
+
+        directions = {
+            "KEYDOWN_UP": Direction.NORTH,
+            "KEYDOWN_RIGHT": Direction.EAST,
+            "KEYDOWN_DOWN": Direction.SOUTH,
+            "KEYDOWN_LEFT": Direction.WEST,
+        }
+
+        if action in directions:
+            self.next_direction = directions[action]
 
         return None
 
@@ -284,8 +296,8 @@ class GameScreen(Screen):
                   if ghost.eaten_timer >= self._config.ghost_respawn_time:
                     ghost.state = GhostLook.NORMAL
 
-        if self.timer >= 0.15:
-            self.timer -= 0.15
+        if self.timer >= MOVE_INTERVAL:
+            self.timer -= MOVE_INTERVAL
 
             if self.current_action == "KEYDOWN_N" and self._config.cheat_mode:
                 for row in range(len(self._game_engine.current_level.visited)):
@@ -300,16 +312,10 @@ class GameScreen(Screen):
                  return "level"
 
             if self._game_engine.object_set.pacman.state != "dead":
-                if self.current_action == "KEYDOWN_UP":
-                    self._game_engine.start_routines(self.maze_layout.cell_size, Direction.NORTH)
-                elif self.current_action == "KEYDOWN_RIGHT":
-                    self._game_engine.start_routines(self.maze_layout.cell_size, Direction.EAST)
-                elif self.current_action == "KEYDOWN_DOWN":
-                    self._game_engine.start_routines(self.maze_layout.cell_size, Direction.SOUTH)
-                elif self.current_action == "KEYDOWN_LEFT":
-                    self._game_engine.start_routines(self.maze_layout.cell_size, Direction.WEST)
-                else:
-                    self._game_engine.start_routines(self.maze_layout.cell_size)
+                self._game_engine.start_routines(
+                    self.maze_layout.cell_size,
+                    self.next_direction
+                )
             else:
                 self._game_engine.pacman_died()
             self._game_engine.object_set.pacman.mouth_open = not self._game_engine.object_set.pacman.mouth_open
@@ -362,15 +368,63 @@ class GameScreen(Screen):
              if not self._game_engine.current_level.visited[super_pacgum.y][super_pacgum.x]:
                  graphics.put_image(self.sprite_set.super_pacgum, s_pacgum_x, s_pacgum_y)
 
-        #  Drawing PacMan
-        pacman_maze_x, pacman_maze_y = object_set.pacman.x, object_set.pacman.y
-        pacman_pos_x, pacman_pos_y = self.maze_layout.convert_maze_coordinates(pacman_maze_x, pacman_maze_y)
-        graphics.put_image(self.sprite_set.get_pacman(object_set.pacman.direction, object_set.pacman.mouth_open), pacman_pos_x, pacman_pos_y)
+        #  Drawing PacMan RIDING THE WAVE
+        pacman = object_set.pacman
 
-        #  Drawing Ghosts
+        progress = min(self.timer / MOVE_INTERVAL, 1.0)
+
+        if pacman.state == "dead":
+            pacman_draw_x = pacman.x
+            pacman_draw_y = pacman.y
+        else:
+            pacman_draw_x = (
+                pacman.previous_x
+                + (pacman.x - pacman.previous_x) * progress
+            )
+
+            pacman_draw_y = (
+                pacman.previous_y
+                + (pacman.y - pacman.previous_y) * progress
+            )
+
+        pacman_pos_x, pacman_pos_y = self.maze_layout.convert_maze_coordinates(
+            pacman_draw_x,
+            pacman_draw_y
+        )
+
+        graphics.put_image(
+            self.sprite_set.get_pacman(
+                pacman.direction,
+                pacman.mouth_open
+            ),
+            round(pacman_pos_x),
+            round(pacman_pos_y)
+        )
+
+        #  Drawing Ghosts RIDING THE WAVE TOOOOO
         for ghost in object_set.ghosts:
-             ghost_pos_x, ghost_pos_y = self.maze_layout.convert_maze_coordinates(ghost.x, ghost.y)
-             graphics.put_image(self.sprite_set.get_ghost(ghost.color, ghost.state, ghost.direction), ghost_pos_x, ghost_pos_y)
+            ghost_draw_x = (
+                ghost.previous_x
+                + (ghost.x - ghost.previous_x) * progress
+            )
+
+            ghost_draw_y = (
+                ghost.previous_y
+                + (ghost.y - ghost.previous_y) * progress
+            )
+            ghost_pos_x, ghost_pos_y = self.maze_layout.convert_maze_coordinates(
+                        ghost_draw_x,
+                        ghost_draw_y
+                    )
+            graphics.put_image(
+                        self.sprite_set.get_ghost(
+                            ghost.color,
+                            ghost.state,
+                            ghost.direction
+                        ),
+                        round(ghost_pos_x),
+                        round(ghost_pos_y)
+                    )
 
     def on_enter(
             self,

@@ -75,34 +75,44 @@ class Application:
     def set_running(self, running: bool) -> None:
         self._running = running
 
-    def handle_events(
-            self,
-            actions: Any
-    ) -> None:
+    def handle_events(self, actions: Any) -> None:
         for action in actions:
-            if str(action).startswith("KEYDOWN"):
-                break
-        if action == "QUIT":
-            self.set_running(False)
-        else:
-            new_screen = self.screens[self.current_screen_name].handle_actions(action)
+            if action == "QUIT":
+                self.set_running(False)
+                continue
+
+            new_screen = self.screens[
+                self.current_screen_name
+            ].handle_actions(action)
+
             if new_screen == "game":
                 if self._game_engine is None:
                     self._game_engine = GameEngine(self.config)
                 else:
                     self._game_engine.reload_level(self.config)
 
-                maze_width, maze_height = self._game_engine.current_level.maze.width, self._game_engine.current_level.maze.height
-                maze_layout = self.renderer.get_maze_layout((maze_width, maze_height), self._game_engine)
-                sprite_set = SpriteBuilder(self.graphics, maze_layout.cell_size).build()
-                self.screens["game"] = GameScreen(self.config, self._game_engine, maze_layout, sprite_set)
+                maze_width = self._game_engine.current_level.maze.width
+                maze_height = self._game_engine.current_level.maze.height
 
-            if new_screen is not None:
-                if self.screens["game"]:
-                    self.screens["game"]._game_engine.level_number = 1
-                self.screens[self.current_screen_name].on_exit()
-                self.current_screen_name = new_screen
-                self.screens[self.current_screen_name].on_enter()
+                maze_layout = self.renderer.get_maze_layout(
+                    (maze_width, maze_height), self._game_engine
+                )
+                sprite_set = SpriteBuilder(
+                    self.graphics, maze_layout.cell_size
+                ).build()
+
+                self.screens["game"] = GameScreen(
+                    self.config, self._game_engine,
+                    maze_layout, sprite_set
+                )
+
+        if new_screen is not None:
+            if self.screens["game"]:
+                self.screens["game"]._game_engine.level_number = 1
+
+            self.screens[self.current_screen_name].on_exit()
+            self.current_screen_name = new_screen
+            self.screens[self.current_screen_name].on_enter()
 
     def draw_current_screen(self) -> None:
 

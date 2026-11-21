@@ -105,6 +105,8 @@ class Moving(Objects):
         super().__init__(x, y)
         self.startx : int = x
         self.starty : int = y
+        self.previous_x = x
+        self.previous_y = y
         self.state = state
         self.direction = Direction.EAST
 
@@ -135,6 +137,8 @@ class Ghost(Moving):
 
     def routine(self, pac, maze: Maze):
         prio : list[int] = []
+        self.previous_x = self.x
+        self.previous_y = self.y
         if self.state == GhostLook.NORMAL:
             prio = self.routineBase(pac)
         elif self.state == GhostLook.EDIBLE:
@@ -229,6 +233,9 @@ class Pacman(Moving):
             cell_size: int,
             direction: Direction = None
         ):
+
+        self.previous_x = self.x
+        self.previous_y = self.y
 
         if direction:
             self.new_direction = direction
