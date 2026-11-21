@@ -6,12 +6,13 @@ renderer looks images up in. Nothing here imports pygame.
 """
 
 import math
+import pygame
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 
 from src.maze.maze import Direction
-from src.ui.graphics import Color, Graphics, Image
+from src.ui.graphics import Color, Graphics
 
 MIN_SPRITE_SIZE = 3
 MAX_SPRITE_SIZE = 64          #  bigger cells are served by a centred sprite
@@ -70,12 +71,12 @@ class SpriteSet:
     """All the images for one cell size. Plain storage with lookups."""
 
     size: int
-    pacman: dict[tuple[Direction, bool], Image]
-    ghosts: dict[tuple[GhostColor, GhostLook, Direction], Image]
-    pacgum: Image
-    super_pacgum: Image
+    pacman: dict[tuple[Direction, bool], pygame.image]
+    ghosts: dict[tuple[GhostColor, GhostLook, Direction], pygame.image]
+    pacgum: pygame.image
+    super_pacgum: pygame.image
 
-    def get_pacman(self, facing: Direction, mouth_open: bool) -> Image:
+    def get_pacman(self, facing: Direction, mouth_open: bool) -> pygame.image:
         """Return Pac-Man looking toward `facing`."""
         return self.pacman[(facing, mouth_open)]
 
@@ -84,7 +85,7 @@ class SpriteSet:
             color: GhostColor,
             look: GhostLook,
             facing: Direction
-    ) -> Image:
+    ) -> pygame.image:
         """Return a ghost image for a colour, a look and a direction."""
         return self.ghosts[_ghost_key(color, look, facing)]
 
@@ -118,7 +119,7 @@ class SpriteBuilder:
             for facing in _VECTOR
             for mouth_open in (True, False)
         }
-        ghosts: dict[tuple[GhostColor, GhostLook, Direction], Image] = {}
+        ghosts: dict[tuple[GhostColor, GhostLook, Direction], pygame.image] = {}
         for color in GhostColor:
             for look in GhostLook:
                 for facing in _VECTOR:
@@ -129,9 +130,9 @@ class SpriteBuilder:
             self._size, pacman, ghosts, self.pacgum(), self.super_pacgum()
         )
 
-    # ---- one method per kind of image ----------------------------------
+    # ---- one method per kind of pygame.image ----------------------------------
 
-    def pacman(self, facing: Direction, mouth_open: bool) -> Image:
+    def pacman(self, facing: Direction, mouth_open: bool) -> pygame.image:
         """A yellow disc, with a wedge removed when the mouth is open."""
         radius = 0.42 * self._size
         fx, fy = _VECTOR[facing]
@@ -150,14 +151,14 @@ class SpriteBuilder:
         self._paint(image, inside, YELLOW)
         return image
 
-    def pacgum(self) -> Image:
+    def pacgum(self) -> pygame.image:
         """A small pellet."""
         image = self._new_image()
         self._paint(image, self._disc(0, 0, max(0.12 * self._size, 0.8)),
                     PELLET)
         return image
 
-    def super_pacgum(self) -> Image:
+    def super_pacgum(self) -> pygame.image:
         """A large pellet (power-up)."""
         image = self._new_image()
         self._paint(image, self._disc(0, 0, max(0.28 * self._size, 1.5)),
@@ -169,7 +170,7 @@ class SpriteBuilder:
             color: GhostColor,
             look: GhostLook,
             facing: Direction
-    ) -> Image:
+    ) -> pygame.image:
         """A ghost: round head, wavy skirt, and eyes or a scared face."""
         size = self._size
         radius = 0.38 * size
@@ -216,14 +217,14 @@ class SpriteBuilder:
 
     # ---- small drawing helpers ------------------------------------------
 
-    def _new_image(self) -> Image:
+    def _new_image(self) -> pygame.image:
         """A fully transparent square image."""
         return self._graphics.new_image(self._size, self._size,
                                         transparent=True)
 
     def _paint(
             self,
-            image: Image,
+            image: pygame.image,
             inside: Callable[[float, float], bool],
             color: Color
     ) -> None:
