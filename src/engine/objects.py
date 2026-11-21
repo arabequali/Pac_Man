@@ -207,6 +207,7 @@ class Pacman(Moving):
         self.mouth_open: bool = True
         self.is_super : bool = False
         self.visited : list[list[int]] = []
+        self.state = "normal"
 
     #direction: up = 0, right = 1, down = 2, left = 3
     def set_direction(self, dir: Direction) -> None:

@@ -31,6 +31,9 @@ class GameEngine:
 
         self.object_set.pacman.routine(self.current_level.maze, cell_size, pac_dir)  # Pacman routine launched
 
+        if self.object_set.pacman.state == "dead":
+            self.current_level.lives -= 1
+
         x = self.object_set.pacman.x
         y = self.object_set.pacman.y
         if not self.current_level.visited[y][x]:  # Make the pacman case visited and add score
@@ -47,3 +50,13 @@ class GameEngine:
     def timer_substract(self, time_elapsed: int) -> None:
 
         self.current_level.timer -= time_elapsed
+
+    def pacman_died(self) -> None:
+
+        obj_set = self.object_set
+        obj_set.pacman.x, obj_set.pacman.y = obj_set.pacman.startx, obj_set.pacman.starty
+
+        for ghost in obj_set.ghosts:
+            ghost.x, ghost.y = ghost.startx, ghost.starty
+
+        obj_set.pacman.state = "normal"

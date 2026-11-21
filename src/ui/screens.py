@@ -273,11 +273,12 @@ class GameScreen(Screen):
         # Update game state here
         self.timer += time_elapsed
         self._game_engine.timer_substract(time_elapsed)
-        if self._game_engine.current_level.timer <= 0:
+        if self._game_engine.current_level.timer <= 0 or self._game_engine.current_level.lives <= 0:
              return "lose"
 
         if self.timer >= 0.15:
             self.timer -= 0.15
+
             if self.current_action == "KEYDOWN_N" and self._config.cheat_mode:
                 for row in range(len(self._game_engine.current_level.visited)):
                       for cell in range(len(self._game_engine.current_level.visited[0])):
@@ -290,16 +291,19 @@ class GameScreen(Screen):
                  self._game_engine.next_level(self._config)
                  return "level"
 
-            if self.current_action == "KEYDOWN_UP":
-                self._game_engine.start_routines(self.maze_layout.cell_size, Direction.NORTH)
-            elif self.current_action == "KEYDOWN_RIGHT":
-                 self._game_engine.start_routines(self.maze_layout.cell_size, Direction.EAST)
-            elif self.current_action == "KEYDOWN_DOWN":
-                self._game_engine.start_routines(self.maze_layout.cell_size, Direction.SOUTH)
-            elif self.current_action == "KEYDOWN_LEFT":
-                self._game_engine.start_routines(self.maze_layout.cell_size, Direction.WEST)
+            if self._game_engine.object_set.pacman.state != "dead":
+                if self.current_action == "KEYDOWN_UP":
+                    self._game_engine.start_routines(self.maze_layout.cell_size, Direction.NORTH)
+                elif self.current_action == "KEYDOWN_RIGHT":
+                    self._game_engine.start_routines(self.maze_layout.cell_size, Direction.EAST)
+                elif self.current_action == "KEYDOWN_DOWN":
+                    self._game_engine.start_routines(self.maze_layout.cell_size, Direction.SOUTH)
+                elif self.current_action == "KEYDOWN_LEFT":
+                    self._game_engine.start_routines(self.maze_layout.cell_size, Direction.WEST)
+                else:
+                    self._game_engine.start_routines(self.maze_layout.cell_size)
             else:
-                self._game_engine.start_routines(self.maze_layout.cell_size)
+                self._game_engine.pacman_died()
             self._game_engine.object_set.pacman.mouth_open = not self._game_engine.object_set.pacman.mouth_open
 
         return None
@@ -318,13 +322,24 @@ class GameScreen(Screen):
         height_offset = self.maze_layout.height_offset // 2
         graphics.put_image(maze_image, width_offset, height_offset)
 
+        white = (255, 255, 255)
+
         score_str = f"Score: {self._game_engine.current_level.score}"
         score_size_x = graphics.get_string_size(score_str, 30)[0]
 
-        graphics.draw_string(width_offset, height_offset // 2, f"Score: {self._game_engine.current_level.score}", 30, (255, 255, 255))
-        graphics.draw_string(width_offset + 2 * score_size_x, height_offset // 2, f"Level: {self._game_engine.level_number}", 30, (255, 255, 255))
-        graphics.draw_string(width_offset + 2 * score_size_x + 2 * graphics.get_string_size(f"Level: {self._game_engine.level_number}", 30)[0], height_offset // 2, f"Timer: {int(self._game_engine.current_level.timer)}", 30, (255, 255, 255))
-        
+        level_str = f"Level: {self._game_engine.level_number}"
+        level_size_x = graphics.get_string_size(level_str, 30)[0]
+
+        timer_str = f"Timer: {int(self._game_engine.current_level.timer)}"
+        timer_size_x = graphics.get_string_size(timer_str, 30)[0]
+
+        lives_str = f"Lives: {self._game_engine.current_level.lives}"
+
+        graphics.draw_string(width_offset, height_offset // 2, f"Score: {self._game_engine.current_level.score}", 30, white)
+        graphics.draw_string(width_offset + 2 * score_size_x, height_offset // 2, level_str, 30, white)
+        graphics.draw_string(width_offset + 2 * score_size_x + 2 * level_size_x, height_offset // 2, timer_str, 30, white)
+        graphics.draw_string(width_offset + 2 * score_size_x + 2 * level_size_x + 2 * timer_size_x, height_offset // 2, lives_str, 30, white)
+
         graphics.draw_string(width_offset, graphics.window.get_size()[1] - height_offset // 2, "Cheat commands: Next Level - N", 30, (255, 255, 255))
 
         #  Drawing PacGums
