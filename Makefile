@@ -1,15 +1,34 @@
+RUN    ?= uv run
+CONFIG ?= config.json
+MAIN    = pac-man.py
+
+MYPY_FLAGS = --warn-return-any --warn-unused-ignores --ignore-missing-imports \
+             --disallow-untyped-defs --check-untyped-defs
+
+.PHONY: install run debug clean lint lint-strict test
+
 install:
 	uv sync
 
 run:
-	uv run python3 pac-man.py config.json
+	$(RUN) python3 $(MAIN) $(CONFIG)
 
 debug:
-	echo "test"
+	$(RUN) python3 -m pdb $(MAIN) $(CONFIG)
 
 clean:
-	@rm -rf src/__pycache__/
+	find . -name .venv -prune -o -type d \
+		\( -name __pycache__ -o -name .mypy_cache -o -name .pytest_cache \) \
+		-exec rm -rf {} +
+	rm -rf build dist
 
 lint:
-		uv run python3 -m flake8 .
-		uv run python3 -m mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	$(RUN) python3 -m flake8 .
+	$(RUN) python3 -m mypy . $(MYPY_FLAGS)
+
+lint-strict:
+	$(RUN) python3 -m flake8 .
+	$(RUN) python3 -m mypy . --strict
+
+test:
+	$(RUN) python3 -m pytest tests
