@@ -17,6 +17,7 @@ class Level:
         self.score: int = score
         self.lives: int = lives
         self.timer = 120
+        self.super_timer: int | None = None
 
         self.score_pacgum = config.points_per_pacgum
         self.score_super = config.points_per_super_pacgum
@@ -37,6 +38,14 @@ class Level:
     def add_pacgum(self) -> None:
 
         self.score += self.score_pacgum
+
+    def add_super(self) -> None:
+
+        self.score += self.score_super
+
+    def add_ghost(self) -> None:
+
+        self.score += self.score_ghost
 
     def all_visited(self) -> bool:
 

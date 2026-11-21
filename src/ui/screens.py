@@ -10,7 +10,7 @@ from src.ui.renderer import MazeLayout
 from src.ui.sprites import SpriteSet
 
 from src.engine.engine import GameEngine
-from src.engine.objects import ObjectSet
+from src.engine.objects import ObjectSet, GhostLook
 
 from src.scores.highscores import HighscoreManager
 
@@ -275,6 +275,14 @@ class GameScreen(Screen):
         self._game_engine.timer_substract(time_elapsed)
         if self._game_engine.current_level.timer <= 0 or self._game_engine.current_level.lives <= 0:
              return "lose"
+        if self._game_engine.current_level.super_timer and self._game_engine.current_level.super_timer - self._game_engine.current_level.timer >= self._config.power_duration:
+             self._game_engine.remove_power()
+
+        for ghost in self._game_engine.object_set.ghosts:
+             if ghost.eaten_timer:
+                  ghost.eaten_timer += time_elapsed
+                  if ghost.eaten_timer >= self._config.ghost_respawn_time:
+                    ghost.state = GhostLook.NORMAL
 
         if self.timer >= 0.15:
             self.timer -= 0.15
@@ -351,7 +359,8 @@ class GameScreen(Screen):
         #  Drawing Super Pacgums
         for super_pacgum in object_set.super_pacgums:
              s_pacgum_x, s_pacgum_y = self.maze_layout.convert_maze_coordinates(super_pacgum.x, super_pacgum.y)
-             graphics.put_image(self.sprite_set.super_pacgum, s_pacgum_x, s_pacgum_y)
+             if not self._game_engine.current_level.visited[super_pacgum.y][super_pacgum.x]:
+                 graphics.put_image(self.sprite_set.super_pacgum, s_pacgum_x, s_pacgum_y)
 
         #  Drawing PacMan
         pacman_maze_x, pacman_maze_y = object_set.pacman.x, object_set.pacman.y

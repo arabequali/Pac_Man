@@ -1,5 +1,5 @@
 from src.engine.level import Level
-from src.engine.objects import ObjectSet
+from src.engine.objects import ObjectSet, GhostLook
 
 from src.maze.generator import MazeGenerator
 from src.maze.maze import Maze, Direction
@@ -24,10 +24,17 @@ class GameEngine:
         self.current_level = Level(Maze(maze.maze), config, 0, config.lives)
         self.object_set = ObjectSet(self.current_level.maze)
 
+    def is_corner(self, x: int, y: int) -> bool:
+        if x == 0 and (y == 0 or y == len(self.current_level.maze._maze_grid) - 1):
+            return True
+        elif x == len(self.current_level.maze.maze_grid) - 1 and (y == 0 or y == len(self.current_level.maze.maze_grid) - 1):
+            return True
+        return False
+
     def start_routines(self, cell_size: int, pac_dir: Direction = None) -> None:
 
         for ghost in self.object_set.ghosts:
-            ghost.routineBase(self.object_set.pacman)
+            ghost.routine(self.object_set.pacman, self.current_level.maze)
 
         self.object_set.pacman.routine(self.current_level.maze, cell_size, pac_dir)  # Pacman routine launched
 
@@ -36,9 +43,20 @@ class GameEngine:
 
         x = self.object_set.pacman.x
         y = self.object_set.pacman.y
-        if not self.current_level.visited[y][x]:  # Make the pacman case visited and add score
+        if not self.current_level.visited[y][x] and not self.is_corner(x, y):  # Make the pacman case visited and add score
             self.current_level.cell_visited(x, y)
             self.current_level.add_pacgum()
+        elif not self.current_level.visited[y][x] and self.is_corner(x, y):
+            self.current_level.cell_visited(x, y)
+            self.current_level.add_super()
+            self.current_level.super_timer = self.current_level.timer
+            for ghost in self.object_set.ghosts:
+                ghost.state = GhostLook.EDIBLE
+
+    def remove_power(self) -> None:
+        self.current_level.super_timer = None
+        for ghost in self.object_set.ghosts:
+            ghost.state = GhostLook.NORMAL
 
     def next_level(self, config: Config) -> None:
 
@@ -60,3 +78,11 @@ class GameEngine:
             ghost.x, ghost.y = ghost.startx, ghost.starty
 
         obj_set.pacman.state = "normal"
+
+    def ghost_died(self) -> None:
+
+        pacman = self.object_set.pacman
+        for ghost in self.object_set.ghosts:
+            if ghost.x == pacman.x and ghost.y == pacman.y:
+                ghost.state = GhostLook.EATEN
+                self.current_level.score += self.current_level.add_ghost()

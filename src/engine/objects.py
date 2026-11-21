@@ -131,13 +131,14 @@ class Ghost(Moving):
     def __init__(self, x: int, y: int, color: GhostColor) -> None:
         super().__init__(x, y, GhostLook.NORMAL)
         self.color = color
+        self.eaten_timer = None
 
     def routine(self, pac, maze: Maze):
         prio : list[int] = []
         if self.state == GhostLook.NORMAL:
-            self.routineBase(pac)
+            prio = self.routineBase(pac)
         elif self.state == GhostLook.EDIBLE:
-            self.routineScared(pac)
+            prio = self.routineScared(pac)
         match prio:
             case [0, 0, 0]:
                 prio = [1, 2, 0, 3]
@@ -156,8 +157,16 @@ class Ghost(Moving):
             case [1, 1, 1]:
                 prio = [0, 3, 1, 2]
         for i in prio:
-            if maze.can_go(self.x, self.y, i):
-                self.move(i)
+            if i == 0:
+                next_dir = Direction.NORTH
+            elif i == 1:
+                next_dir = Direction.EAST
+            elif i == 2:
+                next_dir = Direction.SOUTH
+            elif i == 3:
+                next_dir = Direction.WEST
+            if maze.can_move(self.x, self.y, next_dir):
+                self.move(next_dir, 1)
                 break
 
     def routineBase(self, pac) -> list[int]:
@@ -183,6 +192,7 @@ class Ghost(Moving):
         prio : list[int] = []
         if pac.x == self.x and pac.y == self.y:
             self.set_state(GhostLook.EATEN)
+            self.eaten_timer = 0
             pass
         if abs(self.x - pac.x) < abs(self.y - pac.y):
             prio.append(0)
