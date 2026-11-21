@@ -31,7 +31,7 @@ class Graphics:
 
     def open_window(self) -> None:
         pygame.init()
-        self._window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        self._window = pygame.display.set_mode((0, 0))
         pygame.display.set_caption(self._window_title)
 
     def clear_window(self, color: tuple[int, int, int]) -> None:

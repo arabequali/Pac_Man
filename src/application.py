@@ -6,11 +6,13 @@ from src.config.models import Config
 
 from src.ui.graphics import Graphics
 from src.ui.renderer import Renderer
-from src.ui.screens import GameScreen, WinScreen, MainMenuScreen, ExitScreen, HighscoreScreen, OptionsScreen
+from src.ui.screens import GameScreen, WinScreen, LoseScreen, MainMenuScreen, ExitScreen, HighscoreScreen, OptionsScreen
 from src.ui.sprites import SpriteBuilder
 
 from src.engine.engine import GameEngine
 from src.engine.objects import ObjectSet
+
+from src.scores.highscores import HighscoreManager
 
 
 MAX_DT = 1 / 60
@@ -29,14 +31,16 @@ class Application:
         self._config = config
         self._graphics = graphics
         self._renderer = renderer
+        self._highscore_manager = HighscoreManager(self.config.highscore_filename_path)
         self._game_engine = None
         self._running: bool = False
         self.screens = {
             "main_menu": MainMenuScreen(),
-            "highscores": HighscoreScreen(),
+            "highscores": HighscoreScreen(self.highscore_manager),
             "options": OptionsScreen(self.config),
             "game": None,  # GameScreen will be initialized when the game starts
             "win": None,  # WinScreen will be initialized when the game is won
+            "lose": None,
             "exit": ExitScreen()
         }
         self.current_screen_name: str = "main_menu"
@@ -58,6 +62,10 @@ class Application:
     def running(self) -> bool:
         return self._running
 
+    @property
+    def highscore_manager(self) -> HighscoreManager:
+        return self._highscore_manager
+
     def get_time_elapsed(self) -> float:
         current_time = time.time()
         elapsed_time = current_time - self._last_time
@@ -71,10 +79,13 @@ class Application:
             self,
             actions: Any
     ) -> None:
-        if actions[0] == "QUIT":
+        for action in actions:
+            if str(action).startswith("KEYDOWN"):
+                break
+        if action == "QUIT":
             self.set_running(False)
         else:
-            new_screen = self.screens[self.current_screen_name].handle_actions(actions[0])
+            new_screen = self.screens[self.current_screen_name].handle_actions(action)
             if new_screen == "game":
                 if self._game_engine is None:
                     self._game_engine = GameEngine(self.config)
@@ -106,7 +117,11 @@ class Application:
 
         elif update_result == "win":
             self.current_screen_name = "win"
-            self.screens[self.current_screen_name] = WinScreen()
+            self.screens[self.current_screen_name] = WinScreen(self._game_engine.current_level.score, self.highscore_manager)
+
+        elif update_result == "lose":
+            self.current_screen_name = "lose"
+            self.screens[self.current_screen_name] = LoseScreen(self._game_engine.current_level.score, self.highscore_manager)
 
         self.graphics.clear_window((0, 0, 0))  # Clear the window with black color.
         current_screen.draw(self.graphics)

@@ -2,6 +2,8 @@ import pygame
 
 from src.maze.maze import Maze, Direction
 
+from src.ui.sprites import GhostColor, GhostLook
+
 
 Cell = tuple[int, int]  #  (x, y) in maze coordinates, y grows downwards
 
@@ -24,7 +26,7 @@ class ObjectSet:
         taken = {spawn, *corners}
 
         self.pacman: Pacman = Pacman(spawn[0], spawn[1])
-        self.ghosts: list[Ghost] = [Ghost(x, y) for x, y in corners]
+        self.ghosts: list[Ghost] = [Ghost(corner[0], corner[1], list(GhostColor)[i]) for i, corner in enumerate(corners)]
         self.super_pacgums: list[SuperPacGum] = [
             SuperPacGum(x, y) for x, y in corners
         ]
@@ -99,11 +101,12 @@ class SuperPacGum(Static):
 
 class Moving(Objects):
 
-    def __init__(self, x: int, y: int, state: str) -> None:
+    def __init__(self, x: int, y: int, state: GhostLook | str) -> None:
         super().__init__(x, y)
         self.startx : int = x
         self.starty : int = y
         self.state = state
+        self.direction = Direction.EAST
 
     def move(
             self,
@@ -125,14 +128,15 @@ class Moving(Objects):
 
 class Ghost(Moving):
 
-    def __init__(self, x: int, y: int) -> None:
-        super().__init__(x, y, "Base")
+    def __init__(self, x: int, y: int, color: GhostColor) -> None:
+        super().__init__(x, y, GhostLook.NORMAL)
+        self.color = color
 
     def routine(self, pac, maze: Maze):
         prio : list[int] = []
-        if self.state == "Base":
+        if self.state == GhostLook.NORMAL:
             self.routineBase(pac)
-        elif self.state == "Scared":
+        elif self.state == GhostLook.EDIBLE:
             self.routineScared(pac)
         match prio:
             case [0, 0, 0]:
@@ -159,7 +163,7 @@ class Ghost(Moving):
     def routineBase(self, pac) -> list[int]:
         prio : list[int] = []
         if pac.x == self.x and pac.y == self.y:
-            pac.set_state("Dead")
+            pac.set_state("dead")
             pass
         if abs(self.x - pac.x) < abs(self.y - pac.y):
             prio.append(0)
@@ -178,7 +182,7 @@ class Ghost(Moving):
     def routineScared(self, pac) -> list[int]:
         prio : list[int] = []
         if pac.x == self.x and pac.y == self.y:
-            self.set_state("Dead")
+            self.set_state(GhostLook.EATEN)
             pass
         if abs(self.x - pac.x) < abs(self.y - pac.y):
             prio.append(0)
@@ -197,7 +201,8 @@ class Ghost(Moving):
 class Pacman(Moving):
 
     def __init__(self, x: int, y: int) -> None:
-        super().__init__(x, y, "Alive")
+        super().__init__(x, y, "alive")
+        self.new_direction = None
         self.direction: Direction | None = Direction.EAST
         self.mouth_open: bool = True
         self.is_super : bool = False
@@ -215,10 +220,16 @@ class Pacman(Moving):
         ):
 
         if direction:
-            self.set_direction(direction)
-        if maze.can_move(self.x, self.y, self.direction):
+            self.new_direction = direction
+        if maze.can_move(self.x, self.y, self.new_direction):
+            self.move(self.new_direction, cell_size)
+            if [self.x, self.y] not in self.visited:
+                self.visited.append([self.x, self.y]) #desactiver la pacgum a ces coords
+            self.set_direction(self.new_direction)
+            self.new_direction = None
+        elif self.direction and maze.can_move(self.x, self.y, self.direction):
             self.move(self.direction, cell_size)
-            if [x, y] not in self.visited:
-                visited.append([x, y]) #desactiver la pacgum a ces coords
+            if [self.x, self.y] not in self.visited:
+                self.visited.append([self.x, self.y])
 
 #dans le programme principal, tous les cycles, appeler toutes les routines

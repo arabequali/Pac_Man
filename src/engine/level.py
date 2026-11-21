@@ -8,12 +8,15 @@ class Level:
             self,
             maze: Maze,
             config: Config,
-            score: int
+            score: int,
+            lives: int
     ):
         """Initialize the Level with every needed component."""
         self.maze: Maze = maze
         self.visited: list[list[bool]] = self._build_visited()
         self.score: int = score
+        self.lives: int = lives
+        self.timer = 120
 
         self.score_pacgum = config.points_per_pacgum
         self.score_super = config.points_per_super_pacgum

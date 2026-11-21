@@ -12,6 +12,8 @@ from src.ui.sprites import SpriteSet
 from src.engine.engine import GameEngine
 from src.engine.objects import ObjectSet
 
+from src.scores.highscores import HighscoreManager
+
 
 class Screen(ABC):
     """Base class for all screens in the application."""
@@ -106,9 +108,14 @@ class MainMenuScreen(Screen):
 class HighscoreScreen(Screen):
     """The highscore screen of the application."""
 
-    def __init__(self) -> None:
+    def __init__(
+              self,
+              highscore_manager: HighscoreManager
+    ) -> None:
         super().__init__()
-        self._highscores = ["Player1: 1000", "Player2: 800", "Player3: 600"]
+        self._highscores_manager = highscore_manager
+        self._highscores_manager.load()
+        self.entries = self._highscores_manager.entries
 
     def handle_actions(self, action: Any) -> str | None:
         if action == "KEYDOWN_ESCAPE":
@@ -119,8 +126,15 @@ class HighscoreScreen(Screen):
         pass
 
     def draw(self, graphics: Graphics) -> None:
-        for i, score in enumerate(self._highscores):
-            graphics.draw_string(50, 50 + i * 30, score, font_size=24, color=(255, 255, 255))
+
+        graphics.draw_string(50, 50, "Highscores :", font_size=40, color=(255, 255, 255))
+        for i, score in enumerate(self.entries):
+            score_str = f"{i + 1}. {score.name}: {score.score}"
+            graphics.draw_string(50, 75 + (i + 1) * 50, score_str, font_size=24, color=(255, 255, 255))
+
+    def on_enter(self):
+         self._highscores_manager.load()
+         self.entries = self._highscores_manager.entries
 
 
 class OptionsScreen(Screen):
@@ -258,6 +272,10 @@ class GameScreen(Screen):
     def update(self, time_elapsed: float) -> str | None:
         # Update game state here
         self.timer += time_elapsed
+        self._game_engine.timer_substract(time_elapsed)
+        if self._game_engine.current_level.timer <= 0:
+             return "lose"
+
         if self.timer >= 0.15:
             self.timer -= 0.15
             if self.current_action == "KEYDOWN_N" and self._config.cheat_mode:
@@ -300,8 +318,13 @@ class GameScreen(Screen):
         height_offset = self.maze_layout.height_offset // 2
         graphics.put_image(maze_image, width_offset, height_offset)
 
+        score_str = f"Score: {self._game_engine.current_level.score}"
+        score_size_x = graphics.get_string_size(score_str, 30)[0]
+
         graphics.draw_string(width_offset, height_offset // 2, f"Score: {self._game_engine.current_level.score}", 30, (255, 255, 255))
-        graphics.draw_string(width_offset + 2 * graphics.get_string_size(f"Score: {self._game_engine.current_level.score}", 30)[0], height_offset // 2, f"Level: {self._game_engine.level_number}", 30, (255, 255, 255))
+        graphics.draw_string(width_offset + 2 * score_size_x, height_offset // 2, f"Level: {self._game_engine.level_number}", 30, (255, 255, 255))
+        graphics.draw_string(width_offset + 2 * score_size_x + 2 * graphics.get_string_size(f"Level: {self._game_engine.level_number}", 30)[0], height_offset // 2, f"Timer: {int(self._game_engine.current_level.timer)}", 30, (255, 255, 255))
+        
         graphics.draw_string(width_offset, graphics.window.get_size()[1] - height_offset // 2, "Cheat commands: Next Level - N", 30, (255, 255, 255))
 
         #  Drawing PacGums
@@ -320,6 +343,11 @@ class GameScreen(Screen):
         pacman_pos_x, pacman_pos_y = self.maze_layout.convert_maze_coordinates(pacman_maze_x, pacman_maze_y)
         graphics.put_image(self.sprite_set.get_pacman(object_set.pacman.direction, object_set.pacman.mouth_open), pacman_pos_x, pacman_pos_y)
 
+        #  Drawing Ghosts
+        for ghost in object_set.ghosts:
+             ghost_pos_x, ghost_pos_y = self.maze_layout.convert_maze_coordinates(ghost.x, ghost.y)
+             graphics.put_image(self.sprite_set.get_ghost(ghost.color, ghost.state, ghost.direction), ghost_pos_x, ghost_pos_y)
+
     def on_enter(
             self,
         ) -> None:
@@ -328,17 +356,24 @@ class GameScreen(Screen):
 
 class WinScreen(Screen):
 
-     def __init__(self) -> None:
+     def __init__(
+               self,
+               score: int,
+               highscore_manager
+     ) -> None:
 
+          self.score = score
+          self.highscore_manager = highscore_manager
           self.current_action = None
           self.string_buffer: str = ""
 
      def handle_actions(self, action: Any) -> str | None:
 
         if action == "KEYDOWN_ESCAPE":
-           self.current_action = "quit"
+           return "main_menu"
         elif action == "KEYDOWN_RETURN":
-             return self.string_buffer
+             self.highscore_manager.add(self.string_buffer, self.score)
+             return "main_menu"
         elif action == "KEYDOWN_BACKSPACE":
             self.string_buffer = self.string_buffer[:-1]
         elif action.startswith("KEYDOWN_") and len(self.string_buffer) <= 10:
@@ -366,6 +401,10 @@ class WinScreen(Screen):
                win_str_x = window_x // 2 - win_str_size[0] // 2
                win_str_y = window_y // 2 - win_str_size[1]
 
+               score_str_size = graphics.get_string_size(f"Score: {self.score}", 100)
+               score_str_x = window_x // 2 - score_str_size[0] // 2
+               score_str_y = window_y // 2 - score_str_size[1]
+
                username_str_size = graphics.get_string_size(self.string_buffer, 90)
                username_str_x = window_x // 2 - username_str_size[0] // 2
                username_str_y = window_y // 2 - username_str_size[1] + win_str_size[1] * 2
@@ -376,5 +415,70 @@ class WinScreen(Screen):
                commands_str_y = window_y // 2 - username_str_size[1] + win_str_size[1] * 2 + username_str_size[1] * 2
 
                graphics.draw_string(win_str_x, window_y // 2 - win_str_y, "You won !", 100, (255, 255, 0))
+               graphics.draw_string(score_str_x, score_str_y, f"Score: {self.score}", 100, (255, 255, 255))
                graphics.draw_string(username_str_x, username_str_y, self.string_buffer, 90, (255, 255, 255))
                graphics.draw_string(commands_str_x, commands_str_y, commands_str, 60, (255, 255, 255))
+
+
+class LoseScreen(Screen):
+
+     def __init__(
+               self,
+               score: int,
+               highscore_manager
+     ) -> None:
+
+          self.score = score
+          self.highscore_manager = highscore_manager
+          self.current_action = None
+          self.string_buffer: str = ""
+
+     def handle_actions(self, action: Any) -> str | None:
+
+        if action == "KEYDOWN_ESCAPE":
+           return "main_menu"
+        elif action == "KEYDOWN_RETURN":
+             self.highscore_manager.add(self.string_buffer, self.score)
+             return "main_menu"
+        elif action == "KEYDOWN_BACKSPACE":
+            self.string_buffer = self.string_buffer[:-1]
+        elif action.startswith("KEYDOWN_") and len(self.string_buffer) <= 10:
+             self.typing_name(action)
+
+     def typing_name(self, action: Any) -> None:
+
+          if action == "KEYDOWN_SPACE":
+               self.string_buffer += " "
+               return
+          letter_pressed = str(action).replace("KEYDOWN_", "")
+          if len(letter_pressed) == 1:
+              self.string_buffer += letter_pressed
+
+     def update(self, time_elapsed: float) -> None:
+          pass
+
+     def draw(self, graphics: Graphics) -> None:
+
+        window_x, window_y = graphics.window.get_size()
+
+        win_str_size = graphics.get_string_size("Game Over...", 100)
+        win_str_x = window_x // 2 - win_str_size[0] // 2
+        win_str_y = window_y // 2 - win_str_size[1]
+
+        score_str_size = graphics.get_string_size(f"Score: {self.score}", 100)
+        score_str_x = window_x // 2 - score_str_size[0] // 2
+        score_str_y = window_y // 2 - score_str_size[1]
+
+        username_str_size = graphics.get_string_size(self.string_buffer, 90)
+        username_str_x = window_x // 2 - username_str_size[0] // 2
+        username_str_y = window_y // 2 - username_str_size[1] + win_str_size[1] * 2
+
+        commands_str = "Escape to quit without saving | Enter to save your name"
+        commands_str_size = graphics.get_string_size(commands_str, 60)
+        commands_str_x = window_x // 2 - commands_str_size[0] // 2
+        commands_str_y = window_y // 2 - username_str_size[1] + win_str_size[1] * 2 + username_str_size[1] * 2
+
+        graphics.draw_string(win_str_x, window_y // 2 - win_str_y, "Game Over...", 100, (255, 255, 0))
+        graphics.draw_string(score_str_x, score_str_y, f"Score: {self.score}", 100, (255, 255, 255))
+        graphics.draw_string(username_str_x, username_str_y, self.string_buffer, 90, (255, 255, 255))
+        graphics.draw_string(commands_str_x, commands_str_y, commands_str, 60, (255, 255, 255))

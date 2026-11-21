@@ -13,7 +13,7 @@ class GameEngine:
         """Initialize the GameEngine with the given level."""
 
         maze = MazeGenerator(config.level_1_size, seed=config.level_1_seed)
-        self.current_level = Level(Maze(maze.maze), config, 0)
+        self.current_level = Level(Maze(maze.maze), config, 0, config.lives)
         self.level_number = 1
         self.object_set = ObjectSet(self.current_level.maze)
         self.current_level.cell_visited(self.object_set.pacman.x, self.object_set.pacman.y)  # Make the pacman case visited
@@ -21,10 +21,13 @@ class GameEngine:
     def reload_level(self, config: Config) -> None:
 
         maze = MazeGenerator(config.level_1_size, seed=config.level_1_seed)
-        self.current_level = Level(Maze(maze.maze), config, 0)
+        self.current_level = Level(Maze(maze.maze), config, 0, config.lives)
         self.object_set = ObjectSet(self.current_level.maze)
 
     def start_routines(self, cell_size: int, pac_dir: Direction = None) -> None:
+
+        for ghost in self.object_set.ghosts:
+            ghost.routineBase(self.object_set.pacman)
 
         self.object_set.pacman.routine(self.current_level.maze, cell_size, pac_dir)  # Pacman routine launched
 
@@ -38,5 +41,9 @@ class GameEngine:
 
         if self.level_number < config.level_count:
             new_size = [config.level_1_size[0] + config.level_size_increase * (self.level_number - 1), config.level_1_size[1] + config.level_size_increase * (self.level_number - 1)]
-            self.current_level = Level(Maze(MazeGenerator(new_size).maze), config, self.current_level.score)
+            self.current_level = Level(Maze(MazeGenerator(new_size).maze), config, self.current_level.score, self.current_level.lives)
             self.object_set = ObjectSet(self.current_level.maze)
+
+    def timer_substract(self, time_elapsed: int) -> None:
+
+        self.current_level.timer -= time_elapsed
