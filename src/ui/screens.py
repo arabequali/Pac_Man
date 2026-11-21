@@ -70,7 +70,7 @@ class MainMenuScreen(Screen):
     def __init__(self) -> None:
         super().__init__()
         self._selected_option = 0
-        self._options = ["Start Game", "Highscores","Options", "Exit"]
+        self._options = ["Start Game", "Highscores", "Instructions", "Options", "Exit"]
 
     def handle_actions(self, action: Any) -> str | None:
 
@@ -85,6 +85,8 @@ class MainMenuScreen(Screen):
                 return "game"  # Transition to the game screen
             elif self._selected_option == self._options.index("Highscores"):
                 return "highscores"  # Transition to the highscore screen
+            elif self._selected_option == self._options.index("Instructions"):
+                 return "instructions"
             elif self._selected_option == self._options.index("Options"):
                 return "options"  # Transition to the options screen
             elif self._selected_option == self._options.index("Exit"):
@@ -449,7 +451,7 @@ class WinScreen(Screen):
 
         if action == "KEYDOWN_ESCAPE":
            return "main_menu"
-        elif action == "KEYDOWN_RETURN" and self.highscore_manager.qualifies(self.score):
+        elif action == "KEYDOWN_RETURN" and self.highscore_manager.qualifies(self.score) and len(self.string_buffer):
              self.highscore_manager.add(self.string_buffer, self.score)
              return "main_menu"
         elif action == "KEYDOWN_BACKSPACE":
@@ -566,3 +568,30 @@ class LoseScreen(Screen):
         graphics.draw_string(score_str_x, score_str_y, f"Score: {self.score}", 100, (255, 255, 255))
         graphics.draw_string(username_str_x, username_str_y, self.string_buffer, 90, (255, 255, 255))
         graphics.draw_string(commands_str_x, commands_str_y, commands_str, 60, (255, 255, 255))
+
+
+class InstructionScreen(Screen):
+
+    def __init__(self) -> None:
+          super().__init__()
+          self.strings = [
+               "Move up: up_arrow",
+               "Move right: right_arrow",
+               "Move down: down_arrow",
+               "Move left: left_arrow",
+               "Other commands are given in game."
+          ]
+
+    def handle_actions(self, action: Any) -> str | None:
+        if action == "KEYDOWN_ESCAPE":
+             return "main_menu"
+
+    def update(self, time_elapsed: float) -> None:
+        pass
+
+    def draw(self, graphics: Graphics) -> None:
+
+        window_size = graphics.window.get_size()
+        for i, string in enumerate(self.strings):
+            string_size_x = graphics.get_string_size(string, 30)[0]
+            graphics.draw_string(window_size[0] // 2 - string_size_x // 2, 50 + i * 30, string, 30, (255, 255, 255))

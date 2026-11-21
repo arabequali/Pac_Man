@@ -6,7 +6,7 @@ from src.config.models import Config
 
 from src.ui.graphics import Graphics
 from src.ui.renderer import Renderer
-from src.ui.screens import GameScreen, WinScreen, LoseScreen, MainMenuScreen, ExitScreen, HighscoreScreen, OptionsScreen
+from src.ui.screens import GameScreen, WinScreen, LoseScreen, MainMenuScreen, ExitScreen, InstructionScreen, HighscoreScreen, OptionsScreen
 from src.ui.sprites import SpriteBuilder
 
 from src.engine.engine import GameEngine
@@ -38,6 +38,7 @@ class Application:
             "main_menu": MainMenuScreen(),
             "highscores": HighscoreScreen(self.highscore_manager),
             "options": OptionsScreen(self.config),
+            "instructions": InstructionScreen(),
             "game": None,  # GameScreen will be initialized when the game starts
             "win": None,  # WinScreen will be initialized when the game is won
             "lose": None,
