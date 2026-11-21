@@ -98,6 +98,8 @@ class Application:
                 self.screens["game"] = GameScreen(self.config, self._game_engine, maze_layout, sprite_set)
 
             if new_screen is not None:
+                if self.screens["game"]:
+                    self.screens["game"]._game_engine.level_number = 1
                 self.screens[self.current_screen_name].on_exit()
                 self.current_screen_name = new_screen
                 self.screens[self.current_screen_name].on_enter()

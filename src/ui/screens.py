@@ -374,7 +374,7 @@ class WinScreen(Screen):
      def __init__(
                self,
                score: int,
-               highscore_manager
+               highscore_manager: HighscoreManager
      ) -> None:
 
           self.score = score
@@ -386,7 +386,7 @@ class WinScreen(Screen):
 
         if action == "KEYDOWN_ESCAPE":
            return "main_menu"
-        elif action == "KEYDOWN_RETURN":
+        elif action == "KEYDOWN_RETURN" and self.highscore_manager.qualifies(self.score):
              self.highscore_manager.add(self.string_buffer, self.score)
              return "main_menu"
         elif action == "KEYDOWN_BACKSPACE":
@@ -416,7 +416,8 @@ class WinScreen(Screen):
                win_str_x = window_x // 2 - win_str_size[0] // 2
                win_str_y = window_y // 2 - win_str_size[1]
 
-               score_str_size = graphics.get_string_size(f"Score: {self.score}", 100)
+               score_str = f"Score: {self.score}"
+               score_str_size = graphics.get_string_size(score_str, 100)
                score_str_x = window_x // 2 - score_str_size[0] // 2
                score_str_y = window_y // 2 - score_str_size[1]
 
@@ -424,14 +425,19 @@ class WinScreen(Screen):
                username_str_x = window_x // 2 - username_str_size[0] // 2
                username_str_y = window_y // 2 - username_str_size[1] + win_str_size[1] * 2
 
-               commands_str = "Escape to quit without saving | Enter to save your name"
+               commands_str = "Escape to quit without saving | Enter to save your name" if self.highscore_manager.qualifies(self.score) else "Escape to quit"
                commands_str_size = graphics.get_string_size(commands_str, 60)
                commands_str_x = window_x // 2 - commands_str_size[0] // 2
                commands_str_y = window_y // 2 - username_str_size[1] + win_str_size[1] * 2 + username_str_size[1] * 2
 
                graphics.draw_string(win_str_x, window_y // 2 - win_str_y, "You won !", 100, (255, 255, 0))
-               graphics.draw_string(score_str_x, score_str_y, f"Score: {self.score}", 100, (255, 255, 255))
-               graphics.draw_string(username_str_x, username_str_y, self.string_buffer, 90, (255, 255, 255))
+               graphics.draw_string(score_str_x, score_str_y, score_str, 100, (255, 255, 255))
+               if self.highscore_manager.qualifies(self.score):
+                   graphics.draw_string(username_str_x, username_str_y, self.string_buffer, 90, (255, 255, 255))
+               else:
+                    test_str = "You are not in the top 10!"
+                    test_str_size = graphics.get_string_size(test_str, 90)
+                    graphics.draw_string(window_x // 2 - test_str_size[0] // 2, window_y // 2 - test_str_size[1] + win_str_size[1] * 2, test_str, 90, (255, 255, 255))
                graphics.draw_string(commands_str_x, commands_str_y, commands_str, 60, (255, 255, 255))
 
 
