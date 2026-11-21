@@ -4,12 +4,28 @@
     "score": 4840
   },
   {
+    "name": "OK",
+    "score": 4470
+  },
+  {
+    "name": "TEST",
+    "score": 2390
+  },
+  {
     "name": "ANIL",
     "score": 1970
   },
   {
     "name": "ATTACK",
     "score": 500
+  },
+  {
+    "name": "OK",
+    "score": 350
+  },
+  {
+    "name": "TEST",
+    "score": 240
   },
   {
     "name": "CHROALDYN",
@@ -22,21 +38,5 @@
   {
     "name": "BOUSEUH",
     "score": 160
-  },
-  {
-    "name": "TEST6",
-    "score": 110
-  },
-  {
-    "name": "TEST2",
-    "score": 100
-  },
-  {
-    "name": "TEST8",
-    "score": 100
-  },
-  {
-    "name": "TEST1",
-    "score": 70
   }
 ]

@@ -175,9 +175,6 @@ class Ghost(Moving):
 
     def routineBase(self, pac) -> list[int]:
         prio : list[int] = []
-        if pac.x == self.x and pac.y == self.y:
-            pac.set_state("dead")
-            pass
         if abs(self.x - pac.x) < abs(self.y - pac.y):
             prio.append(0)
         else:
@@ -194,10 +191,6 @@ class Ghost(Moving):
 
     def routineScared(self, pac) -> list[int]:
         prio : list[int] = []
-        if pac.x == self.x and pac.y == self.y:
-            self.set_state(GhostLook.EATEN)
-            self.eaten_timer = 0
-            pass
         if abs(self.x - pac.x) < abs(self.y - pac.y):
             prio.append(0)
         else:

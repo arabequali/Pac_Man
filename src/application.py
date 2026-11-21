@@ -6,7 +6,7 @@ from src.config.models import Config
 
 from src.ui.graphics import Graphics
 from src.ui.renderer import Renderer
-from src.ui.screens import GameScreen, WinScreen, LoseScreen, MainMenuScreen, ExitScreen, InstructionScreen, HighscoreScreen, OptionsScreen
+from src.ui.screens import GameScreen, WinScreen, LoseScreen, PauseScreen, MainMenuScreen, ExitScreen, InstructionScreen, HighscoreScreen, OptionsScreen
 from src.ui.sprites import SpriteBuilder
 
 from src.engine.engine import GameEngine
@@ -42,6 +42,7 @@ class Application:
             "game": None,  # GameScreen will be initialized when the game starts
             "win": None,  # WinScreen will be initialized when the game is won
             "lose": None,
+            "pause": None,
             "exit": ExitScreen()
         }
         self.current_screen_name: str = "main_menu"
@@ -107,7 +108,15 @@ class Application:
                     maze_layout, sprite_set
                 )
 
-        if new_screen is not None:
+            if new_screen == "pause":
+                self.current_screen_name = "pause"
+                self.screens[self.current_screen_name] = PauseScreen(self.screens["game"])
+
+            if new_screen == "resume":
+                self.current_screen_name = "game"
+                break
+
+        if new_screen is not None and new_screen != "resume":
             if self.screens["game"]:
                 self.screens["game"]._game_engine.level_number = 1
 

@@ -269,7 +269,7 @@ class GameScreen(Screen):
     def handle_actions(self, action: Any) -> str | None:
 
         if action == "KEYDOWN_ESCAPE":
-            return "main_menu"
+            return "pause"
 
         directions = {
             "KEYDOWN_UP": Direction.NORTH,
@@ -318,10 +318,13 @@ class GameScreen(Screen):
                     self.maze_layout.cell_size,
                     self.next_direction
                 )
+
+                # Check collisions AFTER Pac-Man and ghosts have moved
+                self._game_engine.someone_died_in_here()
             else:
                 self._game_engine.pacman_died()
             self._game_engine.object_set.pacman.mouth_open = not self._game_engine.object_set.pacman.mouth_open
-
+        self._game_engine.someone_died_in_here()
         return None
 
     def draw(
@@ -428,6 +431,52 @@ class GameScreen(Screen):
                         round(ghost_pos_y)
                     )
 
+    def draw_without_moving(
+              self,
+              graphics: Graphics
+    ) -> None:
+        """Draw the whole game."""
+         
+        object_set = self._game_engine.object_set
+
+        #  Drawing the maze
+        maze_image = self.maze_layout.maze_image
+        width_offset = self.maze_layout.width_offset // 2
+        height_offset = self.maze_layout.height_offset // 2
+        graphics.put_image(maze_image, width_offset, height_offset)
+
+        white = (255, 255, 255)
+
+        score_str = f"Score: {self._game_engine.current_level.score}"
+        score_size_x = graphics.get_string_size(score_str, 30)[0]
+
+        level_str = f"Level: {self._game_engine.level_number}"
+        level_size_x = graphics.get_string_size(level_str, 30)[0]
+
+        timer_str = f"Timer: {int(self._game_engine.current_level.timer)}"
+        timer_size_x = graphics.get_string_size(timer_str, 30)[0]
+
+        lives_str = f"Lives: {self._game_engine.current_level.lives}"
+
+        graphics.draw_string(width_offset, height_offset // 2, f"Score: {self._game_engine.current_level.score}", 30, white)
+        graphics.draw_string(width_offset + 2 * score_size_x, height_offset // 2, level_str, 30, white)
+        graphics.draw_string(width_offset + 2 * score_size_x + 2 * level_size_x, height_offset // 2, timer_str, 30, white)
+        graphics.draw_string(width_offset + 2 * score_size_x + 2 * level_size_x + 2 * timer_size_x, height_offset // 2, lives_str, 30, white)
+
+        graphics.draw_string(width_offset, graphics.window.get_size()[1] - height_offset // 2, "Cheat commands: Next Level - N", 30, (255, 255, 255))
+
+        #  Drawing PacGums
+        for pacgum in object_set.pacgums:
+                pacgum_pos_x, pacgum_pos_y = self.maze_layout.convert_maze_coordinates(pacgum.x, pacgum.y)
+                if not self._game_engine.current_level.visited[pacgum.y][pacgum.x]:
+                    graphics.put_image(self.sprite_set.pacgum, pacgum_pos_x, pacgum_pos_y)
+
+        #  Drawing Super Pacgums
+        for super_pacgum in object_set.super_pacgums:
+            s_pacgum_x, s_pacgum_y = self.maze_layout.convert_maze_coordinates(super_pacgum.x, super_pacgum.y)
+            if not self._game_engine.current_level.visited[super_pacgum.y][super_pacgum.x]:
+                graphics.put_image(self.sprite_set.super_pacgum, s_pacgum_x, s_pacgum_y)
+
     def on_enter(
             self,
         ) -> None:
@@ -523,7 +572,7 @@ class LoseScreen(Screen):
 
         if action == "KEYDOWN_ESCAPE":
            return "main_menu"
-        elif action == "KEYDOWN_RETURN":
+        elif action == "KEYDOWN_RETURN" and len(self.string_buffer) > 0:
              self.highscore_manager.add(self.string_buffer, self.score)
              return "main_menu"
         elif action == "KEYDOWN_BACKSPACE":
@@ -595,3 +644,42 @@ class InstructionScreen(Screen):
         for i, string in enumerate(self.strings):
             string_size_x = graphics.get_string_size(string, 30)[0]
             graphics.draw_string(window_size[0] // 2 - string_size_x // 2, 50 + i * 30, string, 30, (255, 255, 255))
+
+
+class PauseScreen(Screen):
+
+     def __init__(self, game_screen: GameScreen) -> None:
+          super().__init__()
+          self.game_screen = game_screen
+          self.options = [
+               "Resume",
+               "Main Menu"
+          ]
+          self._selected_option = 0
+
+     def handle_actions(self, action):
+          if action == "KEYDOWN_UP":
+                self._selected_option = (self._selected_option - 1) % len(self.options)
+
+          elif action == "KEYDOWN_DOWN":
+                self._selected_option = (self._selected_option + 1) % len(self.options)
+
+          elif action == "KEYDOWN_RETURN":
+                if self._selected_option == self.options.index("Resume"):
+                    return "resume"  # Transition to the game screen
+                elif self._selected_option == self.options.index("Main Menu"):
+                    return "main_menu"  # Transition to the highscore screen
+
+     def update(self, time_elapsed):
+          return super().update(time_elapsed)
+
+     def draw(self, graphics):
+          self.game_screen.draw_without_moving(graphics)
+          window_size = graphics.window.get_size()
+          for i, string in enumerate(self.options):
+               if self._selected_option == i:
+                   string_size = graphics.get_string_size(f"[{string}]", 30)
+                   graphics.draw_string(window_size[0] // 2 - string_size[0] // 2, window_size[1] // 2 + string_size[1] * i, f"[{string}]", 30, (255, 255, 0))
+               else:
+                   string_size = string_size = graphics.get_string_size(string, 30)
+                   graphics.draw_string(window_size[0] // 2 - string_size[0] // 2, window_size[1] // 2 + string_size[1] * i, string, 30, (255, 255, 255))

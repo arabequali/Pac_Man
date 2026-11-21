@@ -77,6 +77,7 @@ class GameEngine:
         for ghost in obj_set.ghosts:
             ghost.x, ghost.y = ghost.startx, ghost.starty
 
+        self.current_level.lives -= 1
         obj_set.pacman.state = "normal"
 
     def ghost_died(self) -> None:
@@ -85,4 +86,39 @@ class GameEngine:
         for ghost in self.object_set.ghosts:
             if ghost.x == pacman.x and ghost.y == pacman.y:
                 ghost.state = GhostLook.EATEN
-                self.current_level.score += self.current_level.add_ghost()
+                self.current_level.add_ghost()
+
+    
+    def someone_died_in_here(self) -> None:
+        obj_set = self.object_set
+        pacman = obj_set.pacman
+
+        for ghost in obj_set.ghosts:
+
+            # Collision: same destination cell
+            same_cell = (
+                ghost.x == pacman.x
+                and ghost.y == pacman.y
+            )
+
+            # Collision: Pac-Man and ghost crossed paths
+            crossed_paths = (
+                ghost.previous_x == pacman.x
+                and ghost.previous_y == pacman.y
+                and pacman.previous_x == ghost.x
+                and pacman.previous_y == ghost.y
+            )
+
+            if same_cell or crossed_paths:
+
+                if ghost.state == GhostLook.EDIBLE:
+                    ghost.state = GhostLook.EATEN
+                    ghost.x = ghost.startx
+                    ghost.y = ghost.starty
+                    ghost.eaten_timer = 0
+                    self.current_level.add_ghost()
+
+                elif ghost.state != GhostLook.EATEN:
+                    pacman.state = "dead"
+                    self.pacman_died()
+                    return
